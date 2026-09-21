@@ -1,22 +1,405 @@
-# Fault code -> candidate stations. Hand-authored. The agent RANKS these candidates; it may not add
-# a station that is not listed here (validated in the `hypothesise` node).
-#
-# Populated in Phase 0 with ~10 codes once the generator's station list is fixed. One example entry
-# shows the shape; keep it until real entries replace it.
-
+# Fault code -> candidate stations. Hand-authored; the agent RANKS these candidates and may not
+# add a station that is not listed (validated in the `hypothesise` node). Priors are the
+# author's belief before evidence: the measuring station first, one upstream cause second.
+# bench_sensitive: a drifting EOL bench can raise this code on good cars.
 version: 1
-stations_source: scenarios/line.yaml   # canonical station list the ids below must exist in
-
+stations_source: scenarios/line.yaml
 faults:
-  F042:
-    description: "Steering column torque out of range at EOL"
+  F-01:
+    description: Underbody weld out of tolerance
     candidates:
-      - station_id: ST-42
-        characteristic_ids: [CH-42-TORQUE]
-        rationale: "Fastening station for the column bracket; torque is measured here directly"
-        prior: 0.7
-      - station_id: ST-41
-        characteristic_ids: [CH-41-GAP]
-        rationale: "Upstream alignment; a gap error presents as torque out of range downstream"
-        prior: 0.3
-    bench_sensitive: true               # a drifting EOL bench can produce this code on good cars
+    - station_id: ST-01
+      characteristic_ids:
+      - CH-01-WELD
+      rationale: 'Underbody weld: the characteristic is measured here'
+      prior: 1.0
+  F-02:
+    description: Side frame weld out of tolerance
+    candidates:
+    - station_id: ST-02
+      characteristic_ids:
+      - CH-02-WELD
+      rationale: 'Side frame weld: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-01
+      characteristic_ids:
+      - CH-01-WELD
+      rationale: underbody weld distortion shifts the side-frame fixture
+      prior: 0.3
+  F-03:
+    description: Roof join out of tolerance
+    candidates:
+    - station_id: ST-03
+      characteristic_ids:
+      - CH-03-GAP
+      rationale: 'Roof join: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-02
+      characteristic_ids:
+      - CH-02-WELD
+      rationale: side-frame misweld opens the roof joint
+      prior: 0.3
+  F-04:
+    description: Door hang left out of tolerance
+    candidates:
+    - station_id: ST-04
+      characteristic_ids:
+      - CH-04-GAP
+      - CH-04-FLUSH
+      rationale: 'Door hang left: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-03
+      characteristic_ids:
+      - CH-03-GAP
+      rationale: roof geometry error changes the door aperture
+      prior: 0.3
+  F-05:
+    description: Door hang right out of tolerance
+    candidates:
+    - station_id: ST-05
+      characteristic_ids:
+      - CH-05-GAP
+      - CH-05-FLUSH
+      rationale: 'Door hang right: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-03
+      characteristic_ids:
+      - CH-03-GAP
+      rationale: roof geometry error changes the door aperture
+      prior: 0.3
+  F-06:
+    description: Hood fit out of tolerance
+    candidates:
+    - station_id: ST-06
+      characteristic_ids:
+      - CH-06-GAP
+      rationale: 'Hood fit: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-09
+      characteristic_ids:
+      - CH-09-GEOM
+      rationale: body geometry drift shows first as hood gap
+      prior: 0.3
+  F-07:
+    description: Tailgate fit out of tolerance
+    candidates:
+    - station_id: ST-07
+      characteristic_ids:
+      - CH-07-GAP
+      rationale: 'Tailgate fit: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-09
+      characteristic_ids:
+      - CH-09-GEOM
+      rationale: body geometry drift shows first as tailgate gap
+      prior: 0.3
+  F-08:
+    description: Fender bolt out of tolerance
+    candidates:
+    - station_id: ST-08
+      characteristic_ids:
+      - CH-08-TORQUE
+      rationale: 'Fender bolt: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-06
+      characteristic_ids:
+      - CH-06-GAP
+      rationale: hood misfit loads the fender bolt off-axis
+      prior: 0.3
+  F-09:
+    description: Body geometry out of tolerance
+    candidates:
+    - station_id: ST-09
+      characteristic_ids:
+      - CH-09-GEOM
+      rationale: 'Body geometry: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-01
+      characteristic_ids:
+      - CH-01-WELD
+      rationale: underbody distortion is the usual root of a geometry excursion
+      prior: 0.3
+  F-10:
+    description: Sealing out of tolerance
+    candidates:
+    - station_id: ST-10
+      characteristic_ids:
+      - CH-10-BEAD
+      rationale: 'Sealing: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-09
+      characteristic_ids:
+      - CH-09-GEOM
+      rationale: geometry deviation widens seams the sealer must bridge
+      prior: 0.3
+  F-11:
+    description: Pretreatment out of tolerance
+    candidates:
+    - station_id: ST-11
+      characteristic_ids:
+      - CH-11-PH
+      rationale: 'Pretreatment: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-10
+      characteristic_ids:
+      - CH-10-BEAD
+      rationale: excess sealer contaminates the pretreatment bath
+      prior: 0.3
+  F-12:
+    description: E-coat out of tolerance
+    candidates:
+    - station_id: ST-12
+      characteristic_ids:
+      - CH-12-THICK
+      rationale: 'E-coat: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-11
+      characteristic_ids:
+      - CH-11-PH
+      rationale: bath pH out of range degrades e-coat deposition
+      prior: 0.3
+  F-13:
+    description: Primer out of tolerance
+    candidates:
+    - station_id: ST-13
+      characteristic_ids:
+      - CH-13-THICK
+      - CH-13-VISC
+      rationale: 'Primer: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-12
+      characteristic_ids:
+      - CH-12-THICK
+      rationale: thin e-coat changes primer build
+      prior: 0.3
+  F-14:
+    description: Base coat out of tolerance
+    candidates:
+    - station_id: ST-14
+      characteristic_ids:
+      - CH-14-THICK
+      rationale: 'Base coat: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-13
+      characteristic_ids:
+      - CH-13-THICK
+      - CH-13-VISC
+      rationale: primer viscosity drives base-coat film build
+      prior: 0.3
+  F-15:
+    description: Clear coat out of tolerance
+    candidates:
+    - station_id: ST-15
+      characteristic_ids:
+      - CH-15-THICK
+      - CH-15-GLOSS
+      rationale: 'Clear coat: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-14
+      characteristic_ids:
+      - CH-14-THICK
+      rationale: base-coat thickness shows through as gloss deviation
+      prior: 0.3
+  F-16:
+    description: Wiring harness out of tolerance
+    candidates:
+    - station_id: ST-16
+      characteristic_ids:
+      - CH-16-RES
+      rationale: 'Wiring harness: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-04
+      characteristic_ids:
+      - CH-04-GAP
+      - CH-04-FLUSH
+      rationale: door hang misalignment pinches the harness route
+      prior: 0.3
+  F-17:
+    description: Cockpit module out of tolerance
+    candidates:
+    - station_id: ST-17
+      characteristic_ids:
+      - CH-17-TORQUE
+      - CH-17-GAP
+      rationale: 'Cockpit module: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-09
+      characteristic_ids:
+      - CH-09-GEOM
+      rationale: body geometry error shows as cockpit gap
+      prior: 0.3
+  F-18:
+    description: Brake fill out of tolerance
+    candidates:
+    - station_id: ST-18
+      characteristic_ids:
+      - CH-18-PRESSURE
+      rationale: 'Brake fill: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-16
+      characteristic_ids:
+      - CH-16-RES
+      rationale: harness routing can foul the brake line during fill
+      prior: 0.3
+  F-19:
+    description: Steering column out of tolerance
+    candidates:
+    - station_id: ST-19
+      characteristic_ids:
+      - CH-19-TORQUE
+      rationale: 'Steering column: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-17
+      characteristic_ids:
+      - CH-17-TORQUE
+      - CH-17-GAP
+      rationale: cockpit module seating sets the column bracket position
+      prior: 0.3
+  F-20:
+    description: Subframe front out of tolerance
+    candidates:
+    - station_id: ST-20
+      characteristic_ids:
+      - CH-20-TORQUE
+      rationale: 'Subframe front: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-09
+      characteristic_ids:
+      - CH-09-GEOM
+      rationale: geometry deviation misaligns subframe bolt holes
+      prior: 0.3
+  F-21:
+    description: Subframe rear out of tolerance
+    candidates:
+    - station_id: ST-21
+      characteristic_ids:
+      - CH-21-TORQUE
+      rationale: 'Subframe rear: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-09
+      characteristic_ids:
+      - CH-09-GEOM
+      rationale: geometry deviation misaligns subframe bolt holes
+      prior: 0.3
+  F-22:
+    description: Wheel fastening out of tolerance
+    candidates:
+    - station_id: ST-22
+      characteristic_ids:
+      - CH-22-TORQUE
+      rationale: 'Wheel fastening: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-20
+      characteristic_ids:
+      - CH-20-TORQUE
+      rationale: front subframe torque error loads the wheel fastening
+      prior: 0.3
+  F-23:
+    description: Seat install out of tolerance
+    candidates:
+    - station_id: ST-23
+      characteristic_ids:
+      - CH-23-TORQUE
+      rationale: 'Seat install: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-17
+      characteristic_ids:
+      - CH-17-TORQUE
+      - CH-17-GAP
+      rationale: cockpit position shifts the seat-rail datum
+      prior: 0.3
+  F-24:
+    description: Battery install out of tolerance
+    candidates:
+    - station_id: ST-24
+      characteristic_ids:
+      - CH-24-TORQUE
+      - CH-24-VOLT
+      rationale: 'Battery install: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-16
+      characteristic_ids:
+      - CH-16-RES
+      rationale: harness terminal fit affects clamp seating and voltage reading
+      prior: 0.3
+  F-25:
+    description: Coolant fill out of tolerance
+    candidates:
+    - station_id: ST-25
+      characteristic_ids:
+      - CH-25-PRESSURE
+      rationale: 'Coolant fill: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-18
+      characteristic_ids:
+      - CH-18-PRESSURE
+      rationale: brake-fill vacuum stage shares the fill rig with coolant
+      prior: 0.3
+  F-26:
+    description: AC charge out of tolerance
+    candidates:
+    - station_id: ST-26
+      characteristic_ids:
+      - CH-26-PRESSURE
+      rationale: 'AC charge: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-25
+      characteristic_ids:
+      - CH-25-PRESSURE
+      rationale: coolant system pressure loss shares the fill rig with AC charge
+      prior: 0.3
+  F-27:
+    description: Glass bonding out of tolerance
+    candidates:
+    - station_id: ST-27
+      characteristic_ids:
+      - CH-27-BEAD
+      rationale: 'Glass bonding: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-03
+      characteristic_ids:
+      - CH-03-GAP
+      rationale: roof joint gap changes the glass bonding bead height
+      prior: 0.3
+  F-28:
+    description: Bumper fit out of tolerance
+    candidates:
+    - station_id: ST-28
+      characteristic_ids:
+      - CH-28-GAP
+      rationale: 'Bumper fit: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-09
+      characteristic_ids:
+      - CH-09-GEOM
+      rationale: geometry deviation shows as bumper gap
+      prior: 0.3
+  F-29:
+    description: Wheel alignment out of tolerance
+    candidates:
+    - station_id: ST-29
+      characteristic_ids:
+      - CH-29-TOE
+      rationale: 'Wheel alignment: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-20
+      characteristic_ids:
+      - CH-20-TORQUE
+      rationale: subframe torque error moves the alignment datum
+      prior: 0.3
+  F-30:
+    description: End-of-line test out of tolerance
+    candidates:
+    - station_id: ST-30
+      characteristic_ids:
+      - CH-30-HEADLAMP
+      - CH-30-EMISS
+      - CH-30-NOISE
+      rationale: 'End-of-line test: the characteristic is measured here'
+      prior: 0.7
+    - station_id: ST-29
+      characteristic_ids:
+      - CH-29-TOE
+      rationale: wheel alignment error presents as headlamp aim at EOL
+      prior: 0.3
+    bench_sensitive: true
