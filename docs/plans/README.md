@@ -1,5 +1,7 @@
 # Implementation plans
 
+**Start with [`checklist.md`](checklist.md)** — the dependency-ordered list of prerequisites, blockers and features across all phases, with a gate at the end of each.
+
 One plan per phase, written from `docs/design/2026-09-21-architecture.md` before that phase starts. Each plan is a list of bite-sized, test-first tasks with exact files, interfaces and commands.
 
 | Plan | Phase | Exit criterion |

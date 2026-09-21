@@ -1,0 +1,216 @@
+# Build checklist — dependency-ordered
+
+Work top to bottom. Every item lists what it unblocks (`→`) or what it needs (`needs`). Nothing below an unchecked item should be started if it names that item. Tick the box in the commit that completes it.
+
+Legend: **[P]** prerequisite · **[B]** currently a CI/`make` blocker · **[F]** feature · **[G]** phase gate (exit criterion)
+
+---
+
+## 0. Prerequisites — machine and accounts
+
+### 0.1 Local tooling (Windows host; everything else runs in Docker)
+
+- [x] **[P]** Git ≥ 2.40 — present (2.55)
+- [x] **[P]** Docker Desktop with Compose v2 and BuildKit — present (29.7)
+- [x] **[P]** Node 20 LTS + npm — present (24.14; fine)
+- [ ] **[P]** `uv` — `powershell -c "irm https://astral.sh/uv/install.ps1 | iex"` → `uv --version` → needed by `make install`, `uv lock`, every Dockerfile's `--frozen`
+- [ ] **[P]** `pre-commit` — `uv tool install pre-commit` then `pre-commit install` in the repo → hooks (ruff, gitleaks) run on every commit
+- [ ] **[P]** `gitleaks`, `trivy` CLIs (optional locally; CI has them) — `winget install gitleaks` / `winget install aquasec.trivy` → `make scan`
+- [ ] **[P]** `make` — Git Bash lacks it by default: `winget install ezwinports.make` or run targets via `bash -c` → every `make` target
+- [ ] **[P]** `cp .env.example .env` and set `POSTGRES_PASSWORD` → `make up`
+
+### 0.2 Accounts and secrets
+
+- [ ] **[P]** LLM provider account and API key (OpenAI or Anthropic; you chose provider-agnostic, so pick the one cassettes will be recorded against) → Phase 3 `LLM_MODE=record`
+- [ ] **[P]** GitHub → repo *Settings › Actions › General*: allow Actions; *Workflow permissions* = read+write → `release.yml` can push to GHCR, `nightly.yml` can push `gh-pages`
+- [ ] **[P]** GitHub → *Settings › Secrets and variables › Actions*: secrets `LLM_API_KEY`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`; variables `LLM_PROVIDER`, `LLM_MODEL` → `nightly.yml`
+- [ ] **[P]** GitHub → *Settings › Pages*: source = `gh-pages` branch → published metrics page (Phase 5)
+- [ ] **[P]** GitHub → Dependabot enabled (already configured by `.github/dependabot.yml`; confirm in *Security*)
+- [ ] **[P]** Langfuse: self-hosted via compose `obs` profile → create project on first `make up-all`, copy keys to `.env`
+- [ ] **[P]** *(optional)* Devin CLI `devin auth login` → `devin plugins install obra/superpowers` → planning/TDD skills in-session
+
+### 0.3 Read before Phase 0
+
+- [ ] **[P]** `docs/design/2026-09-21-architecture.md` — the contract every task below implements
+- [ ] **[P]** `docs/adr/0001`–`0004` — the four decisions no task may violate
+
+---
+
+## Phase 0 — CI green on an empty project
+
+Today `ci.yml` fails on the first push because several `make` targets have nothing to run against. Fix these first so every later commit has a working red/green signal.
+
+- [ ] **[B]** `uv lock` at repo root → commits `uv.lock` → every Dockerfile (`uv sync --frozen`), `make install`, `unit`, `typecheck`
+- [ ] **[B]** `cd console && npm install` → commits `package-lock.json` → `console/Dockerfile` (`npm ci`), `lint` job
+- [ ] **[B]** `console/src/main.tsx` + `App.tsx` rendering "qgate console" → `npm run build` succeeds → `console` image builds
+- [ ] **[B]** One `@pytest.mark.unit` smoke test per package (imports the package) → `make unit` no longer exits 5 ("no tests collected")
+- [ ] **[B]** `make contract` / `make integration` tolerate zero tests: append `|| [ $? -eq 5 ]` in the Makefile or add a skipped placeholder test → `contract`, `integration` jobs
+- [ ] **[B]** `services/line-sim/src/{main,scheduler,producer,scenario_reader}.cpp` + headers and `tests/test_{scheduler,scenario_reader}.cpp` as compiling stubs (one trivial Catch2 assertion) → `line-sim` image builds, `ctest` passes; **needs** nothing but takes the longest (vcpkg first build ≈ 15–25 min) — start it early
+- [ ] **[B]** `eval/harness/qgate_eval/cli.py` with `run --mode --baseline` that exits 0 when `eval/goldens` has no case files → `eval-replay` job
+- [ ] **[B]** Console-script entrypoints exist so images start: `qgate_ingest.main:main`, `qgate_detect.cli:app`, `qgate_agent.main:main`, `qgate_api.main:main`, `qgate_mock_mes.main:main` — each serves `/health` and `/metrics` only → `make up` health checks pass
+- [ ] **[B]** `db/migrations/0001_dims.sql` (even if just `CREATE SCHEMA qgate`) → `migrate` container completes → everything `depends_on: migrate`
+- [ ] **[F]** `make up-infra` target (redpanda, postgres, migrate only) → lets Phase 1 run without product images
+- [ ] **[F]** `Makefile`: `unit` target skips `line-sim-test` when `SKIP_CPP=1` → fast local loop while C++ is stubbed
+- [ ] **[F]** ADR-005 monorepo/uv, ADR-006 provider-agnostic LLM + cassettes → index in `docs/adr/README.md`
+- [ ] **[F]** `pre-commit run --all-files` clean → hooks enforce style from here on
+- [ ] **[G]** **Gate 0:** `make up` brings up infra; `make lint typecheck unit` pass locally; CI green on `main`
+
+---
+
+## Phase 1 — Data spine
+
+Order matters: station ids come from `line.yaml`; everything else references them.
+
+### 1.1 Line model and generator
+
+- [ ] **[F]** `scenarios/line.yaml`: 30 stations with sequence, takt seconds, 1–3 characteristics each (nominal, limits, unit), 3 shifts, 3 benches (repeatability σ, bias) → station/characteristic ids used by fault map, goldens, migrations seed
+- [ ] **[F]** `qgate_core/models/`: `Vin`, `Station`, `Characteristic`, `Shift`, `Bench`, `BuildEvent`, `Measurement`, `EolResult`, `Containment*` Pydantic models mirroring the Avro schemas → shared by generator, ingest, agent, api
+- [ ] **[F]** `qgate_generator/line.py` `LineModel.from_yaml` + VIN sequence generator (deterministic from seed) → all scenarios
+- [ ] **[F]** `qgate_generator/stream.py`: ordered event stream at takt (build event → measurements → EOL result per vehicle), `repeat_no > 1` on a 5 % sample → producers, ground truth
+- [ ] **[F]** Scenarios, each with ground truth (`defective_vins`, `bench_fault`): `clean_baseline` → `tool_wear` → `shift_step` → `bad_lot` → `correlated_noise` → `bench_drift` → `overlap` (in this order; `overlap` composes `bad_lot` + `tool_wear`) → goldens, eval scoring
+- [ ] **[F]** `hypothesis` tests: same seed → identical stream; ground truth ⊆ emitted VINs; bench_drift has zero truly defective VINs → `make unit`
+- [ ] **[F]** `qgate-gen replay --scenario --speed --seed --bootstrap` Python producer using `qgate_core.avro` + `qgate_core.kafka` → **the** producer until Phase 4 replaces it with C++
+
+### 1.2 Contracts live
+
+- [ ] **[F]** `qgate_core/avro.py`: load `schemas/*.avsc`, register on start (`BACKWARD`), Confluent wire-format (de)serialisers → producer, ingest, detect-worker, agent consumer
+- [ ] **[F]** Topic creation with partitions 6/3 on first start (rpk in `migrate`-style one-shot or producer startup) → ordering guarantees per ADR-002
+- [ ] **[F]** Contract test: register `line.measurements.v2` with one added defaulted field; v1 consumer still decodes → `make contract`
+
+### 1.3 Storage
+
+- [ ] **[F]** `0001_dims.sql` full, `0002_facts.sql` (partitioned `fact_measurement`, generated `deviation`/`out_of_tolerance`, all indexes), `0003_containment.sql`, `0004_roles.sql` (five roles + GRANTs) → ingest, tools, api; **needs** `line.yaml` ids for the dim seed
+- [ ] **[F]** Dim seed loader (`qgate-gen seed-dims --db`) from `line.yaml` → ingest FKs resolve
+- [ ] **[F]** `qgate_ingest`: consumer group `ingest` on three topics, Avro decode, Pydantic validate, idempotent upsert (`ON CONFLICT DO NOTHING` on natural keys), DLQ on failure, commit after write, `/health` `/metrics` → Postgres has genealogy
+- [ ] **[F]** Integration test (testcontainers): produce 100 vehicles → rows match; replay same stream → no duplicates; poison message → one DLQ record → `make integration`
+- [ ] **[F]** `db/queries/genealogy.sql` + `EXPLAIN ANALYZE` benchmark test at 5 M rows (`pytest -m integration --benchmark`) asserting p95 < 50 ms → `get_vehicle_genealogy`
+- [ ] **[F]** ADR-010 dbmate over ORM
+
+### 1.4 Goldens — before any agent code
+
+- [ ] **[F]** `knowledge/fault_map.yaml`: ~10 fault codes → candidate stations, all ids from `line.yaml` → `hypothesise`; **needs** 1.1 line.yaml
+- [ ] **[F]** `qgate-gen goldens-candidates --scenario` prints failing VINs with ground-truth context so you can pick trigger VINs → authoring
+- [ ] **[F]** 50 golden YAMLs (`isolated` 12, `drift` 12, `lot` 8, `bench` 8, `contradictory` 6, `overlap` 4) with expected decision, bounds, tolerance, human action → eval harness
+- [ ] **[F]** Golden schema validator test (`pytest -m unit`): every file parses, families count to 50, referenced scenario/station ids exist → protects the set
+- [ ] **[G]** **Gate 1:** any VIN's full build path from the DB in < 50 ms p95; `git tag goldens-v1` pushed; CI green
+
+---
+
+## Phase 2 — Detect and deterministic tools (no LLM)
+
+- [ ] **[F]** `qgate_detect/spc.py`: Western Electric rules 1–4, EWMA λ=0.2, unit-tested on synthetic series → worker
+- [ ] **[F]** `qgate_detect/changepoint.py`: PELT (`ruptures`, rbf, BIC penalty) + CUSUM cross-check → `estimated_onset`; deterministic test on `tool_wear` and `shift_step` ground truth (onset within ±15 takts) → `/drift`, `bound`
+- [ ] **[F]** `qgate_detect/msa.py`: `%GRR` from `repeat_no > 1`, bias, `capable = grr < 30`; test: `bench_drift` → incapable, `clean_baseline` → capable → `/bench/{id}/capability`; `docs/metrology.md` with formula + assumption label
+- [ ] **[F]** `detect api`: `/drift`, `/bench/{id}/capability`, `/stations/{id}/alerts` over `DETECT_RO` → agent tool `check_station_drift`
+- [ ] **[F]** `detect worker`: consumer on `line.measurements`, ring buffers rebuilt from Postgres on start, emits `quality.alerts` keyed by station → dashboard, console alerts tab
+- [ ] **[F]** ADR-009 two processes from one image
+- [ ] **[F]** `db/queries/{station,correlate,window}.sql` + tests against fixture DB (each under budget) → tools
+- [ ] **[F]** `qgate_agent/tools/`: `get_vehicle_genealogy`, `get_station_spec`, `find_correlated_failures`, `check_station_drift`, `estimate_containment_window` as plain typed functions on `AGENT_RO` + `DETECT_BASE_URL`; no LangGraph yet → graph nodes
+- [ ] **[F]** `qgate_mock_mes`: server validated against `openapi.yaml` (idempotent `POST /v1/holds`, 409 on conflicting body, API key, `/_chaos`, `/_stats`) → `commit` node; **needs** nothing else — can be built in parallel with detect
+- [ ] **[F]** Contract tests: `schemathesis` against `mock-mes` OpenAPI → `make contract`
+- [ ] **[G]** **Gate 2:** `pytest -m eval_tools` — for every golden, tools alone return the correct siblings, onset (± tolerance) and bench verdict, with no model in the loop; CI green
+
+---
+
+## Phase 3 — Graph, api, gate, eval
+
+Order is strict here: api endpoints before the gate, gate before commit, cassettes before the CI gate.
+
+### 3.1 api first (the agent depends on it)
+
+- [ ] **[F]** `qgate_core/auth.py`: HS256 JWT, `Role` enum, FastAPI dependency; `make token` CLI → api, console, harness
+- [ ] **[F]** `qgate_api`: `/internal/containments` POST/PATCH (agent-facing, `service` role), containment + audit writes on `API_RW`, `quality.containment` producer → `submit_for_approval`, `report`
+- [ ] **[F]** `qgate_api`: `GET /containments`, `GET /containments/{id}`, `GET /audit` → console, harness
+- [ ] **[F]** Contract tests: `schemathesis` against api OpenAPI → `make contract`
+
+### 3.2 Graph, deterministic nodes first
+
+- [ ] **[F]** `qgate_agent/state.py` `TriageState`, `Bounds`, `HumanDecision` → all nodes
+- [ ] **[F]** Nodes with no LLM: `intake`, `genealogy`, `correlate`, `drift_check`, `route`, `bound`, `bench_alert`, `report` — unit-tested with fixture state → graph
+- [ ] **[F]** `qgate_agent/llm.py`: `init_chat_model` + `CassetteRunnable` (`live|record|replay`; replay-miss = hard failure) → LLM nodes, CI determinism
+- [ ] **[F]** `prompts/hypothesise.v1.md`, `prompts/compose.v1.md`, `prompts/escalate.v1.md` with front-matter `id`/`version` → cassette keys
+- [ ] **[F]** LLM nodes: `hypothesise` (structured `list[Hypothesis]`, validator rejects stations not in fault map), `compose` (validator: bounds quoted verbatim), `escalate` → graph
+- [ ] **[F]** `graph.py`: nodes + conditional edges + `PostgresSaver` on `CHECKPOINT_RW`; `.setup()` on start → gate
+
+### 3.3 Gate and commit
+
+- [ ] **[F]** `gate` node: `submit_for_approval` → `api POST /internal/containments` → `interrupt(payload)` → the design's one sentence
+- [ ] **[F]** `commit` node: `mock-mes POST /v1/holds` with `Idempotency-Key = containment_id` → `api PATCH … COMMITTED` → audit
+- [ ] **[F]** `qgate_agent/http.py`: `POST /triage`, `GET /threads/{id}`, `POST /threads/{id}/resume` → api decision endpoints
+- [ ] **[F]** `qgate_agent/consumer.py`: group `agent-triage` on `line.eol.results`, `FAIL` only, starts a thread with `eol_ts` → event-driven trigger (ADR-007)
+- [ ] **[F]** `qgate_api`: `POST /containments/{id}/approve|amend|reject` → update row, compute diff, emit event, call agent resume → human path
+- [ ] **[F]** `qgate_api`: expiry sweeper (`expires_at`, `APPROVAL_TIMEOUT_S`) → `EXPIRED` + `ESCALATED` event + resume with REJECT → no auto-approve, ever
+- [ ] **[F]** `report` node fills `latency_total/llm/non_llm`, tokens, `cost_usd` (`qgate_core/pricing.py`, labelled assumptions) → metrics table
+- [ ] **[F]** ADR-007 event-driven + HTTP resume, ADR-008 api owns containment state
+- [ ] **[F]** Restart-mid-gate integration test: run to `WAITING_GATE`, restart agent container, resume, assert one row + one hold → **the** HITL claim
+
+### 3.4 Evaluation harness
+
+- [ ] **[F]** `qgate_eval`: runner (replay scenario → trigger → poll → act as human per golden → collect audit), scorers (escapes, precision, recall, decision match, bound tolerance, abstention correctness), Rich table + `report.md` → numbers
+- [ ] **[F]** `LLM_MODE=record` over all 50 goldens → commits `eval/cassettes/` (synthetic VINs only) → deterministic CI
+- [ ] **[F]** First `replay` run → writes `eval/baseline.json` (with `goldens_tag`, `cassette_set`) → CI gate has a reference
+- [ ] **[F]** `make eval-replay` compares to baseline; fails on escapes ↑ or non-LLM p95 ↑ > 20 % → `eval-replay` job is a real gate
+- [ ] **[G]** **Gate 3:** failure event → proposal; approve/amend via `curl`; amendment recorded with diff; kill agent mid-gate loses nothing; CI green with eval gate active
+
+---
+
+## Phase 4 — Console, C++, reliability
+
+Console and C++ are independent of each other; reliability items need Phase 3 commit path.
+
+### 4.1 Console (React weight 1 — keep it to four routes)
+
+- [ ] **[F]** `src/api/` typed client (generate from api OpenAPI with `openapi-typescript`) + `src/auth/` JWT drawer → pages
+- [ ] **[F]** `/queue` → `/case/:id` (evidence tabs) → `/case/:id/decide` (approve/amend/reject, VIN-count preview) → `/audit` (agreement, widened/narrowed, latency, cost) — in that order
+- [ ] **[F]** Playwright smoke: seed one golden, amend window −10 min, assert `COMMITTED` → `console` job
+
+### 4.2 line-sim in C++ (C++ weight 1 — Python fallback stays)
+
+- [ ] **[F]** `scenario_reader`: parse `scenarios/*.yaml` → events; Catch2 tests → scheduler
+- [ ] **[F]** `scheduler`: sequence → emit time at takt × speed; drift-corrected monotonic clock; Catch2 timing invariants → producer
+- [ ] **[F]** `producer`: librdkafka, Confluent wire-format Avro (fallback: JSON + `Content-Encoding` header if avro-cpp burns > 4 h — record deviation) → replaces Python producer in compose; `--producer=python` retained
+- [ ] **[F]** `/metrics` counters (`line_sim_events_total`) → dashboard
+
+### 4.3 Reliability
+
+- [ ] **[F]** `tenacity` retries + timeouts on every `agent → detect/api/mock-mes` call → survives blips
+- [ ] **[F]** Circuit breaker on `mock-mes`; `COMMIT_PENDING` state via `api PATCH`; api sweeper re-resumes every 60 s → outage without data loss
+- [ ] **[F]** Chaos profile wired (`agent → toxiproxy → mock-mes`); tests: 20 s outage mid-commit → exactly one hold, `duplicate_replays ≥ 1`; kill agent mid-gate → resumes → `make chaos` suite
+- [ ] **[F]** `/ready` checks real dependencies on every service → compose/k8s readiness truthful
+- [ ] **[G]** **Gate 4:** shift leader runs the demo without a terminal; chaos suite passes; CI green
+
+---
+
+## Phase 5 — Operations
+
+- [ ] **[F]** `qgate_core/otel.py`: spans per node/tool → Langfuse OTLP; Prometheus histograms with the §11 names → latency methodology
+- [ ] **[F]** `observability/grafana/dashboards/qgate.json`: throughput/lag, triage latency by phase, gate queue, outcomes, cost, breaker, SLO burn → README screenshot
+- [ ] **[F]** Load test (`k6` or `locust`): 5 concurrent / 50 burst; publish p50/p95/p99 with n and consumer lag → latency row
+- [ ] **[F]** Prefect flows: `replay_scenario` → `nightly_eval` → `publish_report`; `prefect.yaml` deploys; worker pool `qgate` → orchestration row
+- [ ] **[F]** `nightly.yml` runs green end to end once; metrics page on `gh-pages` → README table has real, dated numbers
+- [ ] **[F]** `release.yml` dry run on tag `v0.1.0-rc1`: multi-arch images + SBOM on GHCR → Docker/CI rows
+- [ ] **[F]** Air-gapped profile exercised once with Ollama; documented as "works, weaker" → deployment row
+- [ ] **[F]** Pin all compose images by digest → supply-chain claim
+- [ ] **[G]** **Gate 5:** nightly publishes without a human; dashboard shows the load test
+
+---
+
+## Phase 6 — Ship
+
+- [ ] **[F]** `README.md` per design §14: problem → metrics table (dated) → diagram → one command → gate screenshot → artefact links → ROI → runbook/ADR index
+- [ ] **[F]** `RUNBOOK.md` sections 1–8 written for the shift leader
+- [ ] **[F]** `docs/roi.md`: assumptions table, break-even agreement rate, sensitivity on escape cost — every figure labelled
+- [ ] **[F]** `infra/k3s/` kustomize, exercised once on a single-node VM; README says exactly that
+- [ ] **[F]** Fresh clone on a different machine: `git clone && make up && make demo` → the README is true
+- [ ] **[F]** Skill-coverage table ticked against real artefacts; anything unticked removed from CV claims
+- [ ] **[F]** Tag `v1.0.0`; release notes carry `eval/report.md`
+- [ ] **[G]** **Gate 6:** a stranger clones, runs one command, sees it work — and every claimed skill has a link
+
+---
+
+## Standing rules (apply to every item)
+
+- Tests first where a test is possible; a deterministic component has no excuse.
+- One item per commit where practical; conventional commit prefixes (`feat:`, `fix:`, `chore:`, `docs:`, `test:`).
+- If an item slips, slip the date, not the gate. Permitted cuts: C++ → Python, console → queue + approve only, Ollama profile. **Never cut:** goldens, checkpointer, chaos test, audit table.
+- Nothing in the repo names an employer. `private/` stays local.
