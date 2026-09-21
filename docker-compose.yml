@@ -11,6 +11,8 @@ name: qgate
 
 x-python-common: &python-common
   env_file: .env
+  environment: &python-env
+    QGATE_SCHEMAS_DIR: /schemas
   restart: unless-stopped
   read_only: true
   tmpfs: [/tmp]
@@ -76,6 +78,18 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
 
+  roles:
+    image: postgres:16.4
+    profiles: [core]
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./db/set_role_passwords.sql:/set_role_passwords.sql:ro
+    entrypoint: ["psql", "-h", "postgres", "-U", "qgate_migrate", "-d", "qgate", "-v", "ON_ERROR_STOP=1",
+                 "-v", "pw=${POSTGRES_PASSWORD}", "-f", "/set_role_passwords.sql"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
   # ---------------------------------------------------------------- product services
   line-sim:
     build: { context: ., dockerfile: services/line-sim/Dockerfile }
@@ -87,7 +101,7 @@ services:
       - ./schemas:/schemas:ro
     depends_on:
       redpanda: { condition: service_healthy }
-      migrate: { condition: service_completed_successfully }
+      roles: { condition: service_completed_successfully }
 
   line-sim-test:
     build: { context: ., dockerfile: services/line-sim/Dockerfile, target: test }
@@ -99,13 +113,14 @@ services:
     image: ghcr.io/zakaria17amir/qgate-ingest:dev
     profiles: [core]
     environment:
-      DATABASE_URL: ${DATABASE_URL_INGEST_RW}
+      <<: *python-env
+      DATABASE_URL: postgres://ingest_rw:${POSTGRES_PASSWORD}@postgres:5432/qgate
       PORT: "8010"
     volumes:
       - ./schemas:/schemas:ro
     depends_on:
       redpanda: { condition: service_healthy }
-      migrate: { condition: service_completed_successfully }
+      roles: { condition: service_completed_successfully }
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8010/health')"]
       <<: *hc-http
@@ -117,10 +132,11 @@ services:
     profiles: [core]
     command: ["api"]
     environment:
+      <<: *python-env
       PORT: "8002"
-      DATABASE_URL: ${DATABASE_URL_DETECT_RO}
+      DATABASE_URL: postgres://detect_ro:${POSTGRES_PASSWORD}@postgres:5432/qgate
     depends_on:
-      migrate: { condition: service_completed_successfully }
+      roles: { condition: service_completed_successfully }
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8002/health')"]
       <<: *hc-http
@@ -131,13 +147,14 @@ services:
     profiles: [core]
     command: ["worker"]
     environment:
+      <<: *python-env
       PORT: "8012"
-      DATABASE_URL: ${DATABASE_URL_DETECT_RO}
+      DATABASE_URL: postgres://detect_ro:${POSTGRES_PASSWORD}@postgres:5432/qgate
     volumes:
       - ./schemas:/schemas:ro
     depends_on:
       redpanda: { condition: service_healthy }
-      migrate: { condition: service_completed_successfully }
+      roles: { condition: service_completed_successfully }
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8012/health')"]
       <<: *hc-http
@@ -148,15 +165,16 @@ services:
     image: ghcr.io/zakaria17amir/qgate-agent:dev
     profiles: [core]
     environment:
-      DATABASE_URL_AGENT_RO: ${DATABASE_URL_AGENT_RO}
-      DATABASE_URL_CHECKPOINT_RW: ${DATABASE_URL_CHECKPOINT_RW}
+      <<: *python-env
+      DATABASE_URL_AGENT_RO: postgres://agent_ro:${POSTGRES_PASSWORD}@postgres:5432/qgate
+      DATABASE_URL_CHECKPOINT_RW: postgres://checkpoint_rw:${POSTGRES_PASSWORD}@postgres:5432/qgate
     volumes:
       - ./knowledge:/knowledge:ro
       - ./schemas:/schemas:ro
       - ./eval/cassettes:/workspace/eval/cassettes
     depends_on:
       redpanda: { condition: service_healthy }
-      migrate: { condition: service_completed_successfully }
+      roles: { condition: service_completed_successfully }
       detect: { condition: service_healthy }
       api: { condition: service_healthy }
     healthcheck:
@@ -170,12 +188,13 @@ services:
     profiles: [core]
     ports: ["8000:8000"]
     environment:
-      DATABASE_URL: ${DATABASE_URL_API_RW}
+      <<: *python-env
+      DATABASE_URL: postgres://api_rw:${POSTGRES_PASSWORD}@postgres:5432/qgate
     volumes:
       - ./schemas:/schemas:ro
     depends_on:
       redpanda: { condition: service_healthy }
-      migrate: { condition: service_completed_successfully }
+      roles: { condition: service_completed_successfully }
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/health')"]
       <<: *hc-http

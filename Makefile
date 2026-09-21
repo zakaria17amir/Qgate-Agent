@@ -21,7 +21,7 @@ up: ## start core services (line-sim, ingest, detect, agent, api, mock-mes, cons
 	$(COMPOSE) $(CORE) up -d --build
 
 up-infra: ## infra only: redpanda, postgres, migrations
-	$(COMPOSE) $(CORE) up -d --wait redpanda postgres && $(COMPOSE) $(CORE) run --rm migrate
+	$(COMPOSE) $(CORE) up -d --wait redpanda postgres && $(COMPOSE) $(CORE) run --rm migrate && $(COMPOSE) $(CORE) run --rm roles
 
 up-all: ## core + observability + prefect
 	$(COMPOSE) $(CORE) $(OBS) $(EVAL) up -d --build
