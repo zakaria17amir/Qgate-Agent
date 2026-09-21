@@ -13,10 +13,10 @@ Legend: **[P]** prerequisite · **[B]** currently a CI/`make` blocker · **[F]**
 - [x] **[P]** Git ≥ 2.40 — present (2.55)
 - [x] **[P]** Docker Desktop with Compose v2 and BuildKit — present (29.7)
 - [x] **[P]** Node 20 LTS + npm — present (24.14; fine)
-- [ ] **[P]** `uv` — `powershell -c "irm https://astral.sh/uv/install.ps1 | iex"` → `uv --version` → needed by `make install`, `uv lock`, every Dockerfile's `--frozen`
-- [ ] **[P]** `pre-commit` — `uv tool install pre-commit` then `pre-commit install` in the repo → hooks (ruff, gitleaks) run on every commit
-- [ ] **[P]** `gitleaks`, `trivy` CLIs (optional locally; CI has them) — `winget install gitleaks` / `winget install aquasec.trivy` → `make scan`
-- [ ] **[P]** `make` — Git Bash lacks it by default: `winget install ezwinports.make` or run targets via `bash -c` → every `make` target
+- [x] **[P]** `uv` — `powershell -c "irm https://astral.sh/uv/install.ps1 | iex"` → `uv --version` → needed by `make install`, `uv lock`, every Dockerfile's `--frozen` — present (0.12.17)
+- [x] **[P]** `pre-commit` — `uv tool install pre-commit` then `pre-commit install` in the repo → hooks (ruff, gitleaks) run on every commit — present (4.6.2), hooks installed
+- [x] **[P]** `gitleaks`, `trivy` CLIs (optional locally; CI has them) — `winget install Gitleaks.Gitleaks` / `winget install AquaSecurity.Trivy` → `make scan` — present (8.30.1 / 0.74.0)
+- [x] **[P]** `make` — Git Bash lacks it by default: `winget install ezwinports.make` → every `make` target — present (4.4.1)
 - [ ] **[P]** `cp .env.example .env` and set `POSTGRES_PASSWORD` → `make up`
 
 ### 0.2 Accounts and secrets
