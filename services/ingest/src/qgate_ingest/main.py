@@ -9,6 +9,7 @@ import logging
 import threading
 
 import psycopg
+from confluent_kafka import Message, Producer
 from pydantic import BaseModel
 
 from qgate_core import kafka
@@ -34,17 +35,31 @@ def run(settings: Settings, group: str = "ingest", idle_timeout: float | None = 
                 if idle_timeout is not None:
                     break
                 continue
-            try:
-                record = kafka.decode(settings, msg, MODELS[msg.topic() or ""])
-                upsert(conn, _as_line_record(record))
-                conn.commit()
-            except Exception as e:  # anything unwritable is parked, not fatal
-                conn.rollback()
-                log.warning("dlq %s@%s: %s", msg.topic(), msg.offset(), e)
-                kafka.send_to_dlq(dlq, msg, e)
+            handle(settings, conn, dlq, msg)
             consumer.commit(message=msg)
     dlq.flush(10)
     consumer.close()
+
+
+def handle(settings: Settings, conn: psycopg.Connection, dlq: Producer, msg: Message) -> bool:
+    """Write one message; return True if it was parked in the DLQ instead.
+
+    Bad *messages* (undecodable, invalid, constraint-violating) are parked so the line never
+    stalls on one record. A lost *database* is not a message problem: it propagates, the offset
+    stays uncommitted, and the message is redelivered when the service comes back.
+    """
+    try:
+        record = kafka.decode(settings, msg, MODELS[msg.topic() or ""])
+        upsert(conn, _as_line_record(record))
+        conn.commit()
+        return False
+    except psycopg.OperationalError:
+        raise
+    except Exception as e:
+        conn.rollback()
+        log.warning("dlq %s@%s: %s", msg.topic(), msg.offset(), e)
+        kafka.send_to_dlq(dlq, msg, e)
+        return True
 
 
 def _as_line_record(record: BaseModel) -> LineRecord:

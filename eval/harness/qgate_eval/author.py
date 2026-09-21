@@ -96,7 +96,7 @@ def _case(family: Family, seed: int, scenario: Scenario, run: Run) -> Golden:
     elif family is Family.BENCH:
         false_fails = [v for v in ordered if v not in truth.defective_vins and seq(v) >= 1100]
         vin = false_fails[0]
-        expected = Expected(decision=Decision.NONE, station_id=fails[vin].bench_id and "ST-30")
+        expected = Expected(decision=Decision.NONE, station_id=scenario.injects[0].station_id)
         notes = "The bench drifted; the car is good. Propose nothing and flag the bench."
 
     elif family is Family.CONTRADICTORY:
