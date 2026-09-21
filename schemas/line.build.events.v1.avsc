@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "BuildEvent",
+  "namespace": "qgate.line",
+  "doc": "One vehicle entering one station. Key: vin. Topic: line.build.events",
+  "fields": [
+    { "name": "vin", "type": "string" },
+    { "name": "station_id", "type": "string" },
+    { "name": "sequence_no", "type": "long", "doc": "Build sequence position; interchangeable with time via takt" },
+    { "name": "entered_at", "type": { "type": "long", "logicalType": "timestamp-millis" } },
+    { "name": "shift_id", "type": "string" },
+    { "name": "operator_id", "type": "string" },
+    { "name": "parts_lots", "type": { "type": "array", "items": "string" }, "doc": "Lot ids of parts fitted at this station" }
+  ]
+}

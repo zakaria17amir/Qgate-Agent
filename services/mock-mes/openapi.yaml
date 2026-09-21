@@ -1,0 +1,145 @@
+openapi: 3.1.0
+info:
+  title: Mock MES — Hold Management
+  version: 1.0.0
+  description: |
+    A stand-in plant Manufacturing Execution System. The agent integrates against THIS contract,
+    which it does not own. Authored first; the server is validated against it (contract tests).
+servers:
+  - url: http://mock-mes:8003
+security:
+  - ApiKey: []
+paths:
+  /v1/holds:
+    post:
+      operationId: createHold
+      summary: Place a precautionary hold on a set of vehicles
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HoldRequest" }
+      responses:
+        "201":
+          description: Hold created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Hold" }
+        "200":
+          description: Idempotent replay — same key, same body, existing hold returned
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Hold" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409":
+          description: Same Idempotency-Key with a different body
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "503":
+          description: Injected outage (chaos)
+  /v1/holds/{hold_ref}:
+    get:
+      operationId: getHold
+      parameters:
+        - name: hold_ref
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Hold" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404":
+          description: Not found
+  /health:
+    get:
+      operationId: health
+      security: []
+      responses:
+        "200": { description: OK }
+  /_chaos:
+    post:
+      operationId: setChaos
+      summary: Test-only fault injection; disabled unless MES_CHAOS=1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ChaosRequest" }
+      responses:
+        "204": { description: Applied }
+        "403": { description: Chaos disabled }
+  /_stats:
+    get:
+      operationId: getStats
+      responses:
+        "200":
+          description: Counters used by chaos assertions
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Stats" }
+components:
+  securitySchemes:
+    ApiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, format: uuid }
+      description: The agent uses containment_id. Replays with the same key are safe.
+  responses:
+    Unauthorized:
+      description: Missing or invalid API key
+  schemas:
+    HoldRequest:
+      type: object
+      required: [external_ref, vins, reason]
+      properties:
+        external_ref: { type: string, description: containment_id from qgate }
+        station_id: { type: [string, "null"] }
+        window_start: { type: [string, "null"], format: date-time }
+        window_end: { type: [string, "null"], format: date-time }
+        lot_ids: { type: array, items: { type: string }, default: [] }
+        vins: { type: array, items: { type: string }, minItems: 1 }
+        reason: { type: string, minLength: 1, maxLength: 2000 }
+    Hold:
+      allOf:
+        - $ref: "#/components/schemas/HoldRequest"
+        - type: object
+          required: [hold_ref, created_at]
+          properties:
+            hold_ref: { type: string }
+            created_at: { type: string, format: date-time }
+    ChaosRequest:
+      type: object
+      required: [mode, seconds]
+      properties:
+        mode: { type: string, enum: [latency, error, drop_ack] }
+        seconds: { type: integer, minimum: 1, maximum: 600 }
+        status: { type: integer, default: 503 }
+    Stats:
+      type: object
+      properties:
+        holds: { type: integer }
+        duplicate_replays: { type: integer }
+        duplicate_conflicts: { type: integer }
+    Error:
+      type: object
+      required: [detail]
+      properties:
+        detail: { type: string }

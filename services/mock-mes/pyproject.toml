@@ -1,0 +1,24 @@
+[project]
+name = "qgate-mock-mes"
+version = "0.1.0"
+description = "Stand-in plant MES with its own OpenAPI contract, API-key auth, idempotent holds and failure injection"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.115,<1",
+    "uvicorn[standard]>=0.30,<1",
+    "pydantic>=2.9,<3",
+    "prometheus-client>=0.21,<1",
+]
+
+[project.scripts]
+mock-mes = "qgate_mock_mes.main:main"
+
+[dependency-groups]
+test = ["schemathesis>=3.36,<4"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/qgate_mock_mes"]

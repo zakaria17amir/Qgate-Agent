@@ -1,0 +1,37 @@
+# Live-model evaluation. Costs money; runs once a day and on demand. Publishes the numbers the README shows.
+name: nightly
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  eval-live:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with: { version: "0.4.29" }
+      - run: cp .env.example .env
+      - run: make up-all
+        env:
+          LLM_PROVIDER: ${{ vars.LLM_PROVIDER }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+          LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+      - run: docker compose --profile eval run --rm prefect-worker prefect deployment run 'nightly-eval/nightly-eval' --watch
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nightly-report
+          path: |
+            eval/report.md
+            eval/metrics.json
+      - name: publish to gh-pages
+        run: docker compose --profile eval run --rm prefect-worker prefect deployment run 'publish-report/publish-report' --watch
+        env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
+      - if: always()
+        run: make down

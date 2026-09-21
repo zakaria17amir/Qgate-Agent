@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "EolResult",
+  "namespace": "qgate.line",
+  "doc": "End-of-line test verdict. Key: vin. Topic: line.eol.results. FAIL records start a triage.",
+  "fields": [
+    { "name": "vin", "type": "string" },
+    { "name": "tested_at", "type": { "type": "long", "logicalType": "timestamp-millis" }, "doc": "Latency clock starts here" },
+    { "name": "bench_id", "type": "string" },
+    { "name": "result", "type": { "type": "enum", "name": "Result", "symbols": ["PASS", "FAIL"] } },
+    { "name": "fault_codes", "type": { "type": "array", "items": "string" }, "default": [] }
+  ]
+}

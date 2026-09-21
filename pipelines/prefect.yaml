@@ -1,0 +1,24 @@
+name: qgate-pipelines
+prefect-version: 3.0.10
+
+pull:
+  - prefect.deployments.steps.set_working_directory:
+      directory: /workspace/pipelines
+
+deployments:
+  - name: replay-scenario
+    entrypoint: flows/replay_scenario.py:replay_scenario
+    work_pool: { name: qgate }
+    parameters: { scenario: clean_baseline, speed: 10, seed: 42 }
+
+  - name: nightly-eval
+    entrypoint: flows/nightly_eval.py:nightly_eval
+    work_pool: { name: qgate }
+    schedules:
+      - cron: "0 2 * * *"
+        timezone: UTC
+    parameters: { mode: live }
+
+  - name: publish-report
+    entrypoint: flows/publish_report.py:publish_report
+    work_pool: { name: qgate }

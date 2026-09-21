@@ -1,0 +1,25 @@
+[project]
+name = "qgate-core"
+version = "0.1.0"
+description = "Shared domain models, Avro/Kafka helpers, OTel, logging and auth for qgate-agent"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "pydantic>=2.9,<3",
+    "pydantic-settings>=2.5,<3",
+    "confluent-kafka[avro,schemaregistry]>=2.5,<3",
+    "fastavro>=1.9,<2",
+    "structlog>=24.4,<25",
+    "opentelemetry-sdk>=1.27,<2",
+    "opentelemetry-exporter-otlp-proto-http>=1.27,<2",
+    "prometheus-client>=0.21,<1",
+    "pyjwt>=2.9,<3",
+    "httpx>=0.27,<1",
+    "tenacity>=9,<10",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/qgate_core"]

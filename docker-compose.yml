@@ -1,0 +1,285 @@
+# qgate-agent — one file, five profiles.
+#   core   : the product (line-sim, ingest, detect, agent, api, mock-mes, console) + Redpanda, Postgres
+#   obs    : Prometheus, Grafana, Langfuse
+#   eval   : Prefect server + worker (pipelines)
+#   chaos  : toxiproxy between agent and mock-mes
+#   airgap : Ollama for the local-model profile
+#
+# Image digests are pinned in Phase 5 (release); tags are used while the skeleton is under construction.
+
+name: qgate
+
+x-python-common: &python-common
+  env_file: .env
+  restart: unless-stopped
+  read_only: true
+  tmpfs: [/tmp]
+  user: "10001:10001"
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "3" }
+
+x-healthcheck-http: &hc-http
+  interval: 10s
+  timeout: 3s
+  retries: 6
+  start_period: 20s
+
+services:
+  # ---------------------------------------------------------------- infrastructure
+  redpanda:
+    image: redpandadata/redpanda:v24.2.7
+    profiles: [core]
+    command:
+      - redpanda start
+      - --smp 1
+      - --memory 1G
+      - --overprovisioned
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
+      - --schema-registry-addr 0.0.0.0:8081
+    ports:
+      - "19092:19092"   # kafka, host access
+      - "8081:8081"     # schema registry
+      - "9644:9644"     # admin / metrics
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy:.*true'"]
+      <<: *hc-http
+
+  postgres:
+    image: postgres:16.4
+    profiles: [core]
+    environment:
+      POSTGRES_DB: qgate
+      POSTGRES_USER: qgate_migrate
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports: ["5432:5432"]
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qgate_migrate -d qgate"]
+      <<: *hc-http
+
+  migrate:
+    image: amacneil/dbmate:2.19
+    profiles: [core]
+    env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL_MIGRATE}
+      DBMATE_MIGRATIONS_DIR: /db/migrations
+      DBMATE_NO_DUMP_SCHEMA: "true"
+    volumes:
+      - ./db/migrations:/db/migrations:ro
+    command: up
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  # ---------------------------------------------------------------- product services
+  line-sim:
+    build: { context: ., dockerfile: services/line-sim/Dockerfile }
+    image: ghcr.io/OWNER/qgate-line-sim:dev
+    profiles: [core]
+    env_file: .env
+    volumes:
+      - ./scenarios:/scenarios:ro
+      - ./schemas:/schemas:ro
+    depends_on:
+      redpanda: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+
+  line-sim-test:
+    build: { context: ., dockerfile: services/line-sim/Dockerfile, target: test }
+    profiles: [test]
+
+  ingest:
+    <<: *python-common
+    build: { context: ., dockerfile: services/ingest/Dockerfile }
+    image: ghcr.io/OWNER/qgate-ingest:dev
+    profiles: [core]
+    environment:
+      DATABASE_URL: ${DATABASE_URL_INGEST_RW}
+      METRICS_PORT: "8010"
+    volumes:
+      - ./schemas:/schemas:ro
+    depends_on:
+      redpanda: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8010/health')"]
+      <<: *hc-http
+
+  detect:
+    <<: *python-common
+    build: { context: ., dockerfile: services/detect/Dockerfile }
+    image: ghcr.io/OWNER/qgate-detect:dev
+    profiles: [core]
+    command: ["detect", "api", "--port", "8002"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL_DETECT_RO}
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8002/health')"]
+      <<: *hc-http
+
+  detect-worker:
+    <<: *python-common
+    image: ghcr.io/OWNER/qgate-detect:dev
+    profiles: [core]
+    command: ["detect", "worker", "--metrics-port", "8012"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL_DETECT_RO}
+    volumes:
+      - ./schemas:/schemas:ro
+    depends_on:
+      redpanda: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+
+  agent:
+    <<: *python-common
+    build: { context: ., dockerfile: services/agent/Dockerfile }
+    image: ghcr.io/OWNER/qgate-agent:dev
+    profiles: [core]
+    environment:
+      DATABASE_URL_AGENT_RO: ${DATABASE_URL_AGENT_RO}
+      DATABASE_URL_CHECKPOINT_RW: ${DATABASE_URL_CHECKPOINT_RW}
+    volumes:
+      - ./knowledge:/knowledge:ro
+      - ./schemas:/schemas:ro
+      - ./eval/cassettes:/workspace/eval/cassettes
+    depends_on:
+      redpanda: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+      detect: { condition: service_healthy }
+      api: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8001/health')"]
+      <<: *hc-http
+
+  api:
+    <<: *python-common
+    build: { context: ., dockerfile: services/api/Dockerfile }
+    image: ghcr.io/OWNER/qgate-api:dev
+    profiles: [core]
+    ports: ["8000:8000"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL_API_RW}
+    volumes:
+      - ./schemas:/schemas:ro
+    depends_on:
+      redpanda: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/health')"]
+      <<: *hc-http
+
+  mock-mes:
+    <<: *python-common
+    build: { context: ., dockerfile: services/mock-mes/Dockerfile }
+    image: ghcr.io/OWNER/qgate-mock-mes:dev
+    profiles: [core]
+    ports: ["8003:8003"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8003/health')"]
+      <<: *hc-http
+
+  console:
+    build: { context: ./console, dockerfile: Dockerfile, args: { VITE_API_BASE_URL: "${VITE_API_BASE_URL}" } }
+    image: ghcr.io/OWNER/qgate-console:dev
+    profiles: [core]
+    ports: ["8080:8080"]
+    depends_on:
+      api: { condition: service_healthy }
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------- observability
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    profiles: [obs]
+    ports: ["9090:9090"]
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+
+  grafana:
+    image: grafana/grafana:11.2.2
+    profiles: [obs]
+    ports: ["3000:3000"]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on: [prometheus]
+
+  langfuse-db:
+    image: postgres:16.4
+    profiles: [obs]
+    environment:
+      POSTGRES_DB: langfuse
+      POSTGRES_USER: langfuse
+      POSTGRES_PASSWORD: langfuse
+    volumes:
+      - langfuse-data:/var/lib/postgresql/data
+
+  langfuse:
+    image: langfuse/langfuse:2.93.0
+    profiles: [obs]
+    ports: ["3001:3000"]
+    environment:
+      DATABASE_URL: postgresql://langfuse:langfuse@langfuse-db:5432/langfuse
+      NEXTAUTH_URL: http://localhost:3001
+      NEXTAUTH_SECRET: dev-only-change-me
+      SALT: dev-only-change-me
+      TELEMETRY_ENABLED: "false"
+    depends_on: [langfuse-db]
+
+  # ---------------------------------------------------------------- orchestration
+  prefect-server:
+    image: prefecthq/prefect:3.0.10-python3.12
+    profiles: [eval]
+    command: prefect server start --host 0.0.0.0
+    ports: ["4200:4200"]
+    environment:
+      PREFECT_API_DATABASE_CONNECTION_URL: postgresql+asyncpg://qgate_migrate:${POSTGRES_PASSWORD}@postgres:5432/prefect
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  prefect-worker:
+    build: { context: ., dockerfile: pipelines/Dockerfile }
+    image: ghcr.io/OWNER/qgate-pipelines:dev
+    profiles: [eval]
+    env_file: .env
+    environment:
+      PREFECT_API_URL: http://prefect-server:4200/api
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock   # replay_scenario spawns line-sim
+      - ./eval:/workspace/eval
+    depends_on: [prefect-server]
+
+  # ---------------------------------------------------------------- chaos
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.9.0
+    profiles: [chaos]
+    ports: ["8474:8474"]
+    volumes:
+      - ./observability/toxiproxy.json:/config/toxiproxy.json:ro
+    command: ["-config", "/config/toxiproxy.json", "-host", "0.0.0.0"]
+
+  # ---------------------------------------------------------------- air-gapped
+  ollama:
+    image: ollama/ollama:0.3.12
+    profiles: [airgap]
+    ports: ["11434:11434"]
+    volumes:
+      - ollama-data:/root/.ollama
+
+volumes:
+  redpanda-data:
+  postgres-data:
+  prometheus-data:
+  langfuse-data:
+  ollama-data:

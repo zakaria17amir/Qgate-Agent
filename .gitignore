@@ -1,0 +1,49 @@
+# private planning material — never committed
+private/
+
+# secrets
+.env
+.env.*
+!.env.example
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.hypothesis/
+.coverage
+coverage.xml
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# node
+console/node_modules/
+console/dist/
+console/playwright-report/
+console/test-results/
+
+# c++
+services/line-sim/build/
+services/line-sim/vcpkg_installed/
+
+# data — competition datasets and generated streams are never committed
+data/
+*.parquet
+*.csv
+!eval/goldens/**/*.csv
+
+# runtime
+eval/report.md
+eval/metrics.json
+*.log
+
+# ide / os
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

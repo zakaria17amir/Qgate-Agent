@@ -1,0 +1,11 @@
+{
+  "_comment": "CI fails if escapes rise above this or non-LLM p95 regresses by more than 20%. Bumping any value is a deliberate commit with a reason. Populated after the first replay run in Phase 3.",
+  "goldens_tag": null,
+  "cassette_set": null,
+  "escapes": null,
+  "containment_precision": null,
+  "containment_recall": null,
+  "abstention_correct_rate": null,
+  "p95_non_llm_ms": null,
+  "recorded_at": null
+}

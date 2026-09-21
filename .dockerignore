@@ -1,0 +1,15 @@
+.git
+.github
+private
+docs
+console/node_modules
+console/dist
+**/__pycache__
+**/.venv
+**/.mypy_cache
+**/.ruff_cache
+**/.pytest_cache
+**/build
+eval/cassettes
+.env
+.env.*

@@ -1,0 +1,73 @@
+[project]
+name = "qgate-agent-workspace"
+version = "0.0.0"
+description = "End-of-line failure triage and containment agent with a human approval gate"
+requires-python = ">=3.12,<3.13"
+license = { text = "MIT" }
+
+[tool.uv.workspace]
+members = [
+    "packages/qgate-core",
+    "packages/qgate-generator",
+    "services/ingest",
+    "services/detect",
+    "services/agent",
+    "services/api",
+    "services/mock-mes",
+    "pipelines",
+    "eval/harness",
+]
+
+[tool.uv.sources]
+qgate-core = { workspace = true }
+qgate-generator = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "ruff>=0.6,<1",
+    "mypy>=1.11,<2",
+    "pytest>=8,<9",
+    "pytest-asyncio>=0.24,<1",
+    "pytest-cov>=5,<7",
+    "hypothesis>=6.100,<7",
+    "pre-commit>=3.8,<5",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["packages/*/src", "services/*/src", "pipelines", "eval/harness"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N", "S", "ASYNC", "RUF"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S", "B011"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+mypy_path = "packages/qgate-core/src:packages/qgate-generator/src"
+exclude = ["services/line-sim", "console", "infra"]
+
+[tool.pytest.ini_options]
+testpaths = ["packages", "services", "pipelines", "eval/harness"]
+asyncio_mode = "auto"
+markers = [
+    "unit: fast, no external services",
+    "integration: needs testcontainers (Postgres, Redpanda)",
+    "contract: schemathesis / schema-registry compatibility",
+    "eval: golden-case evaluation harness",
+    "chaos: fault-injection scenarios against a running stack",
+]
+addopts = "-ra --strict-markers"
+
+[tool.coverage.run]
+source = ["qgate_agent", "qgate_detect", "qgate_ingest"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true

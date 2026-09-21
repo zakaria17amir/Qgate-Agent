@@ -1,0 +1,19 @@
+{
+  "type": "record",
+  "name": "Measurement",
+  "namespace": "qgate.line",
+  "doc": "One measured characteristic on one vehicle. Key: vin. Topic: line.measurements",
+  "fields": [
+    { "name": "vin", "type": "string" },
+    { "name": "station_id", "type": "string" },
+    { "name": "characteristic_id", "type": "string" },
+    { "name": "bench_id", "type": "string", "doc": "Measurement system that produced the value" },
+    { "name": "measured_at", "type": { "type": "long", "logicalType": "timestamp-millis" } },
+    { "name": "value", "type": "double" },
+    { "name": "unit", "type": "string" },
+    { "name": "nominal", "type": "double" },
+    { "name": "lower_limit", "type": "double" },
+    { "name": "upper_limit", "type": "double" },
+    { "name": "repeat_no", "type": "int", "default": 1, "doc": ">1 marks gauge repeat measurements used for %GRR" }
+  ]
+}

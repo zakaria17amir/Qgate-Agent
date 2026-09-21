@@ -1,0 +1,22 @@
+# Fault code -> candidate stations. Hand-authored. The agent RANKS these candidates; it may not add
+# a station that is not listed here (validated in the `hypothesise` node).
+#
+# Populated in Phase 0 with ~10 codes once the generator's station list is fixed. One example entry
+# shows the shape; keep it until real entries replace it.
+
+version: 1
+stations_source: scenarios/line.yaml   # canonical station list the ids below must exist in
+
+faults:
+  F042:
+    description: "Steering column torque out of range at EOL"
+    candidates:
+      - station_id: ST-42
+        characteristic_ids: [CH-42-TORQUE]
+        rationale: "Fastening station for the column bracket; torque is measured here directly"
+        prior: 0.7
+      - station_id: ST-41
+        characteristic_ids: [CH-41-GAP]
+        rationale: "Upstream alignment; a gap error presents as torque out of range downstream"
+        prior: 0.3
+    bench_sensitive: true               # a drifting EOL bench can produce this code on good cars

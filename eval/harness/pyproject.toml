@@ -1,0 +1,22 @@
+[project]
+name = "qgate-eval"
+version = "0.1.0"
+description = "Golden-case runner, scorers (escapes, precision, recall, agreement, latency, cost) and report renderer"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "qgate-core",
+    "httpx>=0.27,<1",
+    "pyyaml>=6,<7",
+    "typer>=0.12,<1",
+    "rich>=13,<14",
+]
+
+[project.scripts]
+qgate-eval = "qgate_eval.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["qgate_eval"]

@@ -1,0 +1,97 @@
+# Each job is one `make` target. Jobs that need no services run in parallel; the eval gate runs last.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_VERSION: "0.4.29"
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with: { version: "${{ env.UV_VERSION }}" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: npm, cache-dependency-path: console/package-lock.json }
+      - run: make install
+      - run: make lint
+      - run: make typecheck
+
+  unit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with: { version: "${{ env.UV_VERSION }}" }
+      - uses: docker/setup-buildx-action@v3
+      - run: uv sync --all-packages --group dev
+      - run: make unit
+      - uses: actions/upload-artifact@v4
+        with: { name: coverage, path: coverage.xml }
+
+  contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with: { version: "${{ env.UV_VERSION }}" }
+      - run: uv sync --all-packages --group dev
+      - run: make contract
+
+  integration:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with: { version: "${{ env.UV_VERSION }}" }
+      - run: uv sync --all-packages --group dev
+      - run: make integration
+
+  eval-replay:
+    needs: [unit, contract, integration]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with: { version: "${{ env.UV_VERSION }}" }
+      - run: cp .env.example .env
+      - run: uv sync --all-packages --group dev
+      - run: make eval-replay
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: eval-report, path: eval/report.md }
+
+  scan:
+    runs-on: ubuntu-24.04
+    permissions: { contents: read, security-events: write }
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: astral-sh/setup-uv@v3
+        with: { version: "${{ env.UV_VERSION }}" }
+      - run: uv sync --all-packages --group dev
+      - run: uv run pip-audit
+      - uses: gitleaks/gitleaks-action@v2
+        env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
+      - uses: aquasecurity/trivy-action@0.28.0
+        with: { scan-type: fs, severity: CRITICAL, exit-code: "1", ignore-unfixed: true }
+
+  build:
+    needs: [lint]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - run: cp .env.example .env
+      - run: make build
