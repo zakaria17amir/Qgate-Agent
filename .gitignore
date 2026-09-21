@@ -29,7 +29,6 @@ console/test-results/
 
 # c++
 services/line-sim/build/
-services/line-sim/vcpkg_installed/
 
 # data — competition datasets and generated streams are never committed
 data/
@@ -47,3 +46,4 @@ eval/metrics.json
 .vscode/
 .DS_Store
 Thumbs.db
+console/tsconfig.tsbuildinfo

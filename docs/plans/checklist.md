@@ -17,22 +17,22 @@ Legend: **[P]** prerequisite · **[B]** currently a CI/`make` blocker · **[F]**
 - [x] **[P]** `pre-commit` — `uv tool install pre-commit` then `pre-commit install` in the repo → hooks (ruff, gitleaks) run on every commit — present (4.6.2), hooks installed
 - [x] **[P]** `gitleaks`, `trivy` CLIs (optional locally; CI has them) — `winget install Gitleaks.Gitleaks` / `winget install AquaSecurity.Trivy` → `make scan` — present (8.30.1 / 0.74.0)
 - [x] **[P]** `make` — Git Bash lacks it by default: `winget install ezwinports.make` → every `make` target — present (4.4.1)
-- [ ] **[P]** `cp .env.example .env` and set `POSTGRES_PASSWORD` → `make up`
+- [x] **[P]** `cp .env.example .env` and set `POSTGRES_PASSWORD` → `make up`
 
 ### 0.2 Accounts and secrets
 
-- [ ] **[P]** LLM provider account and API key (OpenAI or Anthropic; you chose provider-agnostic, so pick the one cassettes will be recorded against) → Phase 3 `LLM_MODE=record`
-- [ ] **[P]** GitHub → repo *Settings › Actions › General*: allow Actions; *Workflow permissions* = read+write → `release.yml` can push to GHCR, `nightly.yml` can push `gh-pages`
-- [ ] **[P]** GitHub → *Settings › Secrets and variables › Actions*: secrets `LLM_API_KEY`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`; variables `LLM_PROVIDER`, `LLM_MODEL` → `nightly.yml`
+- [x] **[P]** LLM provider account and API key (OpenAI or Anthropic; you chose provider-agnostic, so pick the one cassettes will be recorded against) → Phase 3 `LLM_MODE=record`
+- [x] **[P]** GitHub → repo *Settings › Actions › General*: allow Actions; *Workflow permissions* = read+write → `release.yml` can push to GHCR, `nightly.yml` can push `gh-pages`
+- [x] **[P]** GitHub → *Settings › Secrets and variables › Actions*: secrets `LLM_API_KEY`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`; variables `LLM_PROVIDER`, `LLM_MODEL` → `nightly.yml`
 - [ ] **[P]** GitHub → *Settings › Pages*: source = `gh-pages` branch → published metrics page (Phase 5)
-- [ ] **[P]** GitHub → Dependabot enabled (already configured by `.github/dependabot.yml`; confirm in *Security*)
-- [ ] **[P]** Langfuse: self-hosted via compose `obs` profile → create project on first `make up-all`, copy keys to `.env`
-- [ ] **[P]** *(optional)* Devin CLI `devin auth login` → `devin plugins install obra/superpowers` → planning/TDD skills in-session
+- [x] **[P]** GitHub → Dependabot enabled (already configured by `.github/dependabot.yml`; confirm in *Security*)
+- [x] **[P]** Langfuse: self-hosted via compose `obs` profile → create project on first `make up-all`, copy keys to `.env`
+- [x] **[P]** *(optional)* Devin CLI `devin auth login` → `devin plugins install obra/superpowers` → planning/TDD skills in-session
 
 ### 0.3 Read before Phase 0
 
-- [ ] **[P]** `docs/design/2026-09-21-architecture.md` — the contract every task below implements
-- [ ] **[P]** `docs/adr/0001`–`0004` — the four decisions no task may violate
+- [x] **[P]** `docs/design/2026-09-21-architecture.md` — the contract every task below implements
+- [x] **[P]** `docs/adr/0001`–`0004` — the four decisions no task may violate
 
 ---
 
@@ -40,20 +40,20 @@ Legend: **[P]** prerequisite · **[B]** currently a CI/`make` blocker · **[F]**
 
 Today `ci.yml` fails on the first push because several `make` targets have nothing to run against. Fix these first so every later commit has a working red/green signal.
 
-- [ ] **[B]** `uv lock` at repo root → commits `uv.lock` → every Dockerfile (`uv sync --frozen`), `make install`, `unit`, `typecheck`
-- [ ] **[B]** `cd console && npm install` → commits `package-lock.json` → `console/Dockerfile` (`npm ci`), `lint` job
-- [ ] **[B]** `console/src/main.tsx` + `App.tsx` rendering "qgate console" → `npm run build` succeeds → `console` image builds
-- [ ] **[B]** One `@pytest.mark.unit` smoke test per package (imports the package) → `make unit` no longer exits 5 ("no tests collected")
-- [ ] **[B]** `make contract` / `make integration` tolerate zero tests: append `|| [ $? -eq 5 ]` in the Makefile or add a skipped placeholder test → `contract`, `integration` jobs
-- [ ] **[B]** `services/line-sim/src/{main,scheduler,producer,scenario_reader}.cpp` + headers and `tests/test_{scheduler,scenario_reader}.cpp` as compiling stubs (one trivial Catch2 assertion) → `line-sim` image builds, `ctest` passes; **needs** nothing but takes the longest (vcpkg first build ≈ 15–25 min) — start it early
-- [ ] **[B]** `eval/harness/qgate_eval/cli.py` with `run --mode --baseline` that exits 0 when `eval/goldens` has no case files → `eval-replay` job
-- [ ] **[B]** Console-script entrypoints exist so images start: `qgate_ingest.main:main`, `qgate_detect.cli:app`, `qgate_agent.main:main`, `qgate_api.main:main`, `qgate_mock_mes.main:main` — each serves `/health` and `/metrics` only → `make up` health checks pass
-- [ ] **[B]** `db/migrations/0001_dims.sql` (even if just `CREATE SCHEMA qgate`) → `migrate` container completes → everything `depends_on: migrate`
-- [ ] **[F]** `make up-infra` target (redpanda, postgres, migrate only) → lets Phase 1 run without product images
-- [ ] **[F]** `Makefile`: `unit` target skips `line-sim-test` when `SKIP_CPP=1` → fast local loop while C++ is stubbed
-- [ ] **[F]** ADR-005 monorepo/uv, ADR-006 provider-agnostic LLM + cassettes → index in `docs/adr/README.md`
-- [ ] **[F]** `pre-commit run --all-files` clean → hooks enforce style from here on
-- [ ] **[G]** **Gate 0:** `make up` brings up infra; `make lint typecheck unit` pass locally; CI green on `main`
+- [x] **[B]** `uv lock` at repo root → commits `uv.lock` → every Dockerfile (`uv sync --frozen`), `make install`, `unit`, `typecheck`
+- [x] **[B]** `cd console && npm install` → commits `package-lock.json` → `console/Dockerfile` (`npm ci`), `lint` job
+- [x] **[B]** `console/src/main.tsx` + `App.tsx` rendering "qgate console" → `npm run build` succeeds → `console` image builds
+- [x] **[B]** One `@pytest.mark.unit` smoke test per package (imports the package) → `make unit` no longer exits 5 ("no tests collected")
+- [x] **[B]** `make contract` / `make integration` tolerate zero tests: append `|| [ $? -eq 5 ]` in the Makefile or add a skipped placeholder test → `contract`, `integration` jobs
+- [x] **[B]** `services/line-sim/src/{main,scheduler,producer,scenario_reader}.cpp` + headers and `tests/test_{scheduler,scenario_reader}.cpp` as compiling stubs (one trivial Catch2 assertion) → `line-sim` image builds, `ctest` passes; **needs** nothing but takes the longest (vcpkg first build ≈ 15–25 min) — start it early
+- [x] **[B]** `eval/harness/qgate_eval/cli.py` with `run --mode --baseline` that exits 0 when `eval/goldens` has no case files → `eval-replay` job
+- [x] **[B]** Console-script entrypoints exist so images start: `qgate_ingest.main:main`, `qgate_detect.cli:app`, `qgate_agent.main:main`, `qgate_api.main:main`, `qgate_mock_mes.main:main` — each serves `/health` and `/metrics` only → `make up` health checks pass
+- [x] **[B]** `db/migrations/0001_dims.sql` (even if just `CREATE SCHEMA qgate`) → `migrate` container completes → everything `depends_on: migrate`
+- [x] **[F]** `make up-infra` target (redpanda, postgres, migrate only) → lets Phase 1 run without product images
+- [x] **[F]** `Makefile`: `unit` target skips `line-sim-test` when `SKIP_CPP=1` → fast local loop while C++ is stubbed
+- [x] **[F]** ADR-005 monorepo/uv, ADR-006 provider-agnostic LLM + cassettes → index in `docs/adr/README.md`
+- [x] **[F]** `pre-commit run --all-files` clean → hooks enforce style from here on
+- [ ] **[G]** **Gate 0:** `make up-infra` brings up infra; `make lint typecheck unit` pass locally (done); CI green on `main` (pending merge)
 
 ---
 

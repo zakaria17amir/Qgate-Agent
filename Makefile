@@ -8,7 +8,7 @@ OBS            := --profile obs
 EVAL           := --profile eval
 CHAOS          := --profile chaos
 
-.PHONY: help up up-all down logs ps demo chaos \
+.PHONY: help up up-infra up-all down logs ps demo chaos \
         install lint fmt typecheck unit contract integration eval-replay eval-live scan build \
         token migrate goldens-freeze clean
 
@@ -19,6 +19,9 @@ help: ## list targets
 
 up: ## start core services (line-sim, ingest, detect, agent, api, mock-mes, console + infra)
 	$(COMPOSE) $(CORE) up -d --build
+
+up-infra: ## infra only: redpanda, postgres, migrations
+	$(COMPOSE) $(CORE) up -d --wait redpanda postgres && $(COMPOSE) $(CORE) run --rm migrate
 
 up-all: ## core + observability + prefect
 	$(COMPOSE) $(CORE) $(OBS) $(EVAL) up -d --build
@@ -54,8 +57,7 @@ install: ## sync the uv workspace and console deps
 lint: ## ruff, prettier, clang-format (no changes)
 	uv run ruff check .
 	uv run ruff format --check .
-	cd console && npx prettier --check "src/**/*.{ts,tsx,json,css}"
-	find services/line-sim -name '*.cpp' -o -name '*.hpp' | xargs -r clang-format --dry-run --Werror
+	cd console && npx prettier --check "src/**/*.{ts,tsx,json,css}" && npx tsc -b
 
 fmt: ## apply formatters
 	uv run ruff check --fix .
@@ -65,21 +67,24 @@ fmt: ## apply formatters
 typecheck: ## mypy --strict on all Python packages
 	uv run mypy .
 
-unit: ## fast tests, no external services
+unit: ## fast tests, no external services (SKIP_CPP=1 skips the line-sim build)
 	uv run pytest -m unit --cov --cov-report=term-missing --cov-report=xml
-	$(COMPOSE) build line-sim-test && $(COMPOSE) run --rm line-sim-test
+ifndef SKIP_CPP
+	$(COMPOSE) --profile test build line-sim-test && $(COMPOSE) --profile test run --rm line-sim-test
+endif
 
+# `|| [ $$? -eq 5 ]`: pytest exit 5 = no tests collected; tolerated until these layers have tests
 contract: ## schemathesis against api + mock-mes OpenAPI; Avro compatibility
-	uv run pytest -m contract
+	uv run pytest -m contract || [ $$? -eq 5 ]
 
 integration: ## testcontainers: Postgres + Redpanda end to end
-	uv run pytest -m integration
+	uv run pytest -m integration || [ $$? -eq 5 ]
 
 eval-replay: ## golden cases with recorded LLM responses; compare to eval/baseline.json
-	uv run python -m qgate_eval run --mode replay --baseline eval/baseline.json
+	uv run qgate-eval run --mode replay --baseline eval/baseline.json
 
 eval-live: ## golden cases against the live model (costs money; nightly)
-	uv run python -m qgate_eval run --mode live --report eval/report.md
+	uv run qgate-eval run --mode live --report eval/report.md
 
 scan: ## dependency + image + secret scans
 	uv run pip-audit

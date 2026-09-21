@@ -55,7 +55,7 @@ services:
       POSTGRES_DB: qgate
       POSTGRES_USER: qgate_migrate
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports: ["5432:5432"]
+    ports: ["${POSTGRES_HOST_PORT:-5432}:5432"]   # host-side only; services use the compose network
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -67,7 +67,7 @@ services:
     profiles: [core]
     env_file: .env
     environment:
-      DATABASE_URL: ${DATABASE_URL_MIGRATE}
+      DATABASE_URL: postgres://qgate_migrate:${POSTGRES_PASSWORD}@postgres:5432/qgate?sslmode=disable
       DBMATE_MIGRATIONS_DIR: /db/migrations
       DBMATE_NO_DUMP_SCHEMA: "true"
     volumes:
@@ -95,12 +95,12 @@ services:
 
   ingest:
     <<: *python-common
-    build: { context: ., dockerfile: services/ingest/Dockerfile }
+    build: { context: ., dockerfile: docker/python.Dockerfile, args: { PACKAGE: qgate-ingest, ENTRYPOINT: ingest } }
     image: ghcr.io/zakaria17amir/qgate-ingest:dev
     profiles: [core]
     environment:
       DATABASE_URL: ${DATABASE_URL_INGEST_RW}
-      METRICS_PORT: "8010"
+      PORT: "8010"
     volumes:
       - ./schemas:/schemas:ro
     depends_on:
@@ -112,11 +112,12 @@ services:
 
   detect:
     <<: *python-common
-    build: { context: ., dockerfile: services/detect/Dockerfile }
+    build: { context: ., dockerfile: docker/python.Dockerfile, args: { PACKAGE: qgate-detect, ENTRYPOINT: detect } }
     image: ghcr.io/zakaria17amir/qgate-detect:dev
     profiles: [core]
-    command: ["detect", "api", "--port", "8002"]
+    command: ["api"]
     environment:
+      PORT: "8002"
       DATABASE_URL: ${DATABASE_URL_DETECT_RO}
     depends_on:
       migrate: { condition: service_completed_successfully }
@@ -128,18 +129,22 @@ services:
     <<: *python-common
     image: ghcr.io/zakaria17amir/qgate-detect:dev
     profiles: [core]
-    command: ["detect", "worker", "--metrics-port", "8012"]
+    command: ["worker"]
     environment:
+      PORT: "8012"
       DATABASE_URL: ${DATABASE_URL_DETECT_RO}
     volumes:
       - ./schemas:/schemas:ro
     depends_on:
       redpanda: { condition: service_healthy }
       migrate: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8012/health')"]
+      <<: *hc-http
 
   agent:
     <<: *python-common
-    build: { context: ., dockerfile: services/agent/Dockerfile }
+    build: { context: ., dockerfile: docker/python.Dockerfile, args: { PACKAGE: qgate-agent, ENTRYPOINT: agent } }
     image: ghcr.io/zakaria17amir/qgate-agent:dev
     profiles: [core]
     environment:
@@ -160,7 +165,7 @@ services:
 
   api:
     <<: *python-common
-    build: { context: ., dockerfile: services/api/Dockerfile }
+    build: { context: ., dockerfile: docker/python.Dockerfile, args: { PACKAGE: qgate-api, ENTRYPOINT: api } }
     image: ghcr.io/zakaria17amir/qgate-api:dev
     profiles: [core]
     ports: ["8000:8000"]
@@ -177,7 +182,7 @@ services:
 
   mock-mes:
     <<: *python-common
-    build: { context: ., dockerfile: services/mock-mes/Dockerfile }
+    build: { context: ., dockerfile: docker/python.Dockerfile, args: { PACKAGE: qgate-mock-mes, ENTRYPOINT: mock-mes } }
     image: ghcr.io/zakaria17amir/qgate-mock-mes:dev
     profiles: [core]
     ports: ["8003:8003"]
@@ -249,8 +254,10 @@ services:
       postgres: { condition: service_healthy }
 
   prefect-worker:
-    build: { context: ., dockerfile: pipelines/Dockerfile }
+    build: { context: ., dockerfile: docker/python.Dockerfile, args: { PACKAGE: qgate-pipelines, ENTRYPOINT: prefect } }
     image: ghcr.io/zakaria17amir/qgate-pipelines:dev
+    command: ["worker", "start", "--pool", "qgate", "--type", "process"]
+    user: root   # drives the docker socket for replay_scenario
     profiles: [eval]
     env_file: .env
     environment:
