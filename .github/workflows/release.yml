@@ -17,7 +17,7 @@ jobs:
       matrix:
         service: [line-sim, ingest, detect, agent, api, mock-mes, console, pipelines]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
@@ -47,7 +47,7 @@ jobs:
     needs: [images]
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
