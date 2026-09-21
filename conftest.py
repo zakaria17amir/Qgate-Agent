@@ -7,7 +7,7 @@ import psycopg
 import pytest
 from testcontainers.postgres import PostgresContainer
 
-ROOT = Path(__file__).parents[3]
+ROOT = Path(__file__).parent
 MIGRATIONS = ROOT / "db" / "migrations"
 ROLE_PASSWORD = "test-pw"  # throwaway container
 

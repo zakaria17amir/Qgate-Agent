@@ -4,6 +4,7 @@ import json
 import time
 from pathlib import Path
 
+import psycopg
 import typer
 
 from qgate_core import kafka
@@ -11,6 +12,7 @@ from qgate_core.models import BuildEvent, LineRecord, Measurement
 from qgate_core.settings import Settings
 from qgate_generator.line import Line
 from qgate_generator.scenario import Scenario
+from qgate_generator.seed import seed_dims
 from qgate_generator.stream import Run, generate
 
 app = typer.Typer(add_completion=False)
@@ -68,6 +70,17 @@ def truth(scenario: str = typer.Option(...), scenarios_dir: Path = SCENARIOS) ->
             indent=1,
         )
     )
+
+
+@app.command(name="seed-dims")
+def seed_dims_cmd(
+    database_url: str = typer.Option(..., envvar="DATABASE_URL", help="ingest_rw or migrate URL"),
+    scenarios_dir: Path = SCENARIOS,
+) -> None:
+    """Insert stations, characteristics, shifts and benches from line.yaml (idempotent)."""
+    with psycopg.connect(database_url) as conn:
+        seed_dims(conn, Line.load(scenarios_dir / "line.yaml"))
+    typer.echo("dims seeded")
 
 
 def _stamp(e: LineRecord) -> float:

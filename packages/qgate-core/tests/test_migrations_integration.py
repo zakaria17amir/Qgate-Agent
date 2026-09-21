@@ -38,7 +38,7 @@ def test_generated_columns_derive_from_value(pg_url: str) -> None:
         conn.execute(
             "insert into qgate.fact_measurement (vin, station_id, characteristic_id, bench_id, "
             "measured_at, value, nominal, lower_limit, upper_limit) "
-            "values ('V','ST-01','CH-01-A','B',now(),11.5,10,9,11)"
+            "values ('V','ST-99','CH-99-A','B99',now(),11.5,10,9,11)"
         )
         dev, oot = conn.execute(
             "select deviation, out_of_tolerance from qgate.fact_measurement where vin = 'V'"

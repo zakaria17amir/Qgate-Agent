@@ -51,6 +51,7 @@ extend-immutable-calls = ["typer.Option", "typer.Argument", "fastapi.Depends", "
 
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**" = ["S", "B011"]
+"conftest.py" = ["S"]
 
 [tool.mypy]
 python_version = "3.12"

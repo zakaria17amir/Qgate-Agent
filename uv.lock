@@ -2469,6 +2469,7 @@ version = "0.1.0"
 source = { editable = "packages/qgate-generator" }
 dependencies = [
     { name = "numpy" },
+    { name = "psycopg", extra = ["binary"] },
     { name = "pyyaml" },
     { name = "qgate-core" },
     { name = "typer" },
@@ -2477,6 +2478,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "numpy", specifier = ">=2.5,<3" },
+    { name = "psycopg", extras = ["binary"], specifier = ">=3.3,<4" },
     { name = "pyyaml", specifier = ">=6,<7" },
     { name = "qgate-core", editable = "packages/qgate-core" },
     { name = "typer", specifier = ">=0.27,<1" },
