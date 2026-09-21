@@ -79,7 +79,7 @@ services:
   # ---------------------------------------------------------------- product services
   line-sim:
     build: { context: ., dockerfile: services/line-sim/Dockerfile }
-    image: ghcr.io/OWNER/qgate-line-sim:dev
+    image: ghcr.io/zakaria17amir/qgate-line-sim:dev
     profiles: [core]
     env_file: .env
     volumes:
@@ -96,7 +96,7 @@ services:
   ingest:
     <<: *python-common
     build: { context: ., dockerfile: services/ingest/Dockerfile }
-    image: ghcr.io/OWNER/qgate-ingest:dev
+    image: ghcr.io/zakaria17amir/qgate-ingest:dev
     profiles: [core]
     environment:
       DATABASE_URL: ${DATABASE_URL_INGEST_RW}
@@ -113,7 +113,7 @@ services:
   detect:
     <<: *python-common
     build: { context: ., dockerfile: services/detect/Dockerfile }
-    image: ghcr.io/OWNER/qgate-detect:dev
+    image: ghcr.io/zakaria17amir/qgate-detect:dev
     profiles: [core]
     command: ["detect", "api", "--port", "8002"]
     environment:
@@ -126,7 +126,7 @@ services:
 
   detect-worker:
     <<: *python-common
-    image: ghcr.io/OWNER/qgate-detect:dev
+    image: ghcr.io/zakaria17amir/qgate-detect:dev
     profiles: [core]
     command: ["detect", "worker", "--metrics-port", "8012"]
     environment:
@@ -140,7 +140,7 @@ services:
   agent:
     <<: *python-common
     build: { context: ., dockerfile: services/agent/Dockerfile }
-    image: ghcr.io/OWNER/qgate-agent:dev
+    image: ghcr.io/zakaria17amir/qgate-agent:dev
     profiles: [core]
     environment:
       DATABASE_URL_AGENT_RO: ${DATABASE_URL_AGENT_RO}
@@ -161,7 +161,7 @@ services:
   api:
     <<: *python-common
     build: { context: ., dockerfile: services/api/Dockerfile }
-    image: ghcr.io/OWNER/qgate-api:dev
+    image: ghcr.io/zakaria17amir/qgate-api:dev
     profiles: [core]
     ports: ["8000:8000"]
     environment:
@@ -178,7 +178,7 @@ services:
   mock-mes:
     <<: *python-common
     build: { context: ., dockerfile: services/mock-mes/Dockerfile }
-    image: ghcr.io/OWNER/qgate-mock-mes:dev
+    image: ghcr.io/zakaria17amir/qgate-mock-mes:dev
     profiles: [core]
     ports: ["8003:8003"]
     healthcheck:
@@ -187,7 +187,7 @@ services:
 
   console:
     build: { context: ./console, dockerfile: Dockerfile, args: { VITE_API_BASE_URL: "${VITE_API_BASE_URL}" } }
-    image: ghcr.io/OWNER/qgate-console:dev
+    image: ghcr.io/zakaria17amir/qgate-console:dev
     profiles: [core]
     ports: ["8080:8080"]
     depends_on:
@@ -250,7 +250,7 @@ services:
 
   prefect-worker:
     build: { context: ., dockerfile: pipelines/Dockerfile }
-    image: ghcr.io/OWNER/qgate-pipelines:dev
+    image: ghcr.io/zakaria17amir/qgate-pipelines:dev
     profiles: [eval]
     env_file: .env
     environment:
