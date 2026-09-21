@@ -65,10 +65,8 @@ class Golden(BaseModel):
             return cls.model_validate(yaml.safe_load(f))
 
     def dump(self, path: Path) -> None:
-        path.write_text(
-            yaml.safe_dump(self.model_dump(mode="json"), sort_keys=False, width=100),
-            encoding="utf8",
-        )
+        with path.open("w", encoding="utf8", newline="") as f:
+            yaml.safe_dump(self.model_dump(mode="json"), f, sort_keys=False, width=100)
 
 
 def load_all(directory: Path) -> list[Golden]:

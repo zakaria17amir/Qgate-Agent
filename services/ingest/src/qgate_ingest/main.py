@@ -24,6 +24,7 @@ app = health_app("ingest")
 
 def run(settings: Settings, group: str = "ingest", idle_timeout: float | None = None) -> None:
     """Poll forever, or until ``idle_timeout`` seconds pass with no message (used by tests)."""
+    kafka.ensure_topics(settings)  # a consumer must not depend on a producer having run first
     consumer = kafka.consumer(settings, group, list(MODELS))
     dlq = kafka.producer(settings)
     with psycopg.connect(settings.database_url) as conn:

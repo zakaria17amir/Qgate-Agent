@@ -63,36 +63,36 @@ Order matters: station ids come from `line.yaml`; everything else references the
 
 ### 1.1 Line model and generator
 
-- [ ] **[F]** `scenarios/line.yaml`: 30 stations with sequence, takt seconds, 1–3 characteristics each (nominal, limits, unit), 3 shifts, 3 benches (repeatability σ, bias) → station/characteristic ids used by fault map, goldens, migrations seed
-- [ ] **[F]** `qgate_core/models/`: `Vin`, `Station`, `Characteristic`, `Shift`, `Bench`, `BuildEvent`, `Measurement`, `EolResult`, `Containment*` Pydantic models mirroring the Avro schemas → shared by generator, ingest, agent, api
-- [ ] **[F]** `qgate_generator/line.py` `LineModel.from_yaml` + VIN sequence generator (deterministic from seed) → all scenarios
-- [ ] **[F]** `qgate_generator/stream.py`: ordered event stream at takt (build event → measurements → EOL result per vehicle), `repeat_no > 1` on a 5 % sample → producers, ground truth
-- [ ] **[F]** Scenarios, each with ground truth (`defective_vins`, `bench_fault`): `clean_baseline` → `tool_wear` → `shift_step` → `bad_lot` → `correlated_noise` → `bench_drift` → `overlap` (in this order; `overlap` composes `bad_lot` + `tool_wear`) → goldens, eval scoring
-- [ ] **[F]** `hypothesis` tests: same seed → identical stream; ground truth ⊆ emitted VINs; bench_drift has zero truly defective VINs → `make unit`
-- [ ] **[F]** `qgate-gen replay --scenario --speed --seed --bootstrap` Python producer using `qgate_core.avro` + `qgate_core.kafka` → **the** producer until Phase 4 replaces it with C++
+- [x] **[F]** `scenarios/line.yaml`: 30 stations with sequence, takt seconds, 1–3 characteristics each (nominal, limits, unit), 3 shifts, 3 benches (repeatability σ, bias) → station/characteristic ids used by fault map, goldens, migrations seed
+- [x] **[F]** `qgate_core/models/`: `Vin`, `Station`, `Characteristic`, `Shift`, `Bench`, `BuildEvent`, `Measurement`, `EolResult`, `Containment*` Pydantic models mirroring the Avro schemas → shared by generator, ingest, agent, api
+- [x] **[F]** `qgate_generator/line.py` `LineModel.from_yaml` + VIN sequence generator (deterministic from seed) → all scenarios
+- [x] **[F]** `qgate_generator/stream.py`: ordered event stream at takt (build event → measurements → EOL result per vehicle), `repeat_no > 1` on a 5 % sample → producers, ground truth
+- [x] **[F]** Scenarios, each with ground truth (`defective_vins`, `bench_fault`): `clean_baseline` → `tool_wear` → `shift_step` → `bad_lot` → `correlated_noise` → `bench_drift` → `overlap` (in this order; `overlap` composes `bad_lot` + `tool_wear`) → goldens, eval scoring
+- [x] **[F]** `hypothesis` tests: same seed → identical stream; ground truth ⊆ emitted VINs; bench_drift has zero truly defective VINs → `make unit`
+- [x] **[F]** `qgate-gen replay --scenario --speed --seed --bootstrap` Python producer using `qgate_core.avro` + `qgate_core.kafka` → **the** producer until Phase 4 replaces it with C++
 
 ### 1.2 Contracts live
 
-- [ ] **[F]** `qgate_core/avro.py`: load `schemas/*.avsc`, register on start (`BACKWARD`), Confluent wire-format (de)serialisers → producer, ingest, detect-worker, agent consumer
-- [ ] **[F]** Topic creation with partitions 6/3 on first start (rpk in `migrate`-style one-shot or producer startup) → ordering guarantees per ADR-002
-- [ ] **[F]** Contract test: register `line.measurements.v2` with one added defaulted field; v1 consumer still decodes → `make contract`
+- [x] **[F]** `qgate_core/avro.py`: load `schemas/*.avsc`, register on start (`BACKWARD`), Confluent wire-format (de)serialisers → producer, ingest, detect-worker, agent consumer
+- [x] **[F]** Topic creation with partitions 6/3 on first start (rpk in `migrate`-style one-shot or producer startup) → ordering guarantees per ADR-002
+- [x] **[F]** Contract test: register `line.measurements.v2` with one added defaulted field; v1 consumer still decodes → `make contract`
 
 ### 1.3 Storage
 
-- [ ] **[F]** `0001_dims.sql` full, `0002_facts.sql` (partitioned `fact_measurement`, generated `deviation`/`out_of_tolerance`, all indexes), `0003_containment.sql`, `0004_roles.sql` (five roles + GRANTs) → ingest, tools, api; **needs** `line.yaml` ids for the dim seed
-- [ ] **[F]** Dim seed loader (`qgate-gen seed-dims --db`) from `line.yaml` → ingest FKs resolve
-- [ ] **[F]** `qgate_ingest`: consumer group `ingest` on three topics, Avro decode, Pydantic validate, idempotent upsert (`ON CONFLICT DO NOTHING` on natural keys), DLQ on failure, commit after write, `/health` `/metrics` → Postgres has genealogy
-- [ ] **[F]** Integration test (testcontainers): produce 100 vehicles → rows match; replay same stream → no duplicates; poison message → one DLQ record → `make integration`
-- [ ] **[F]** `db/queries/genealogy.sql` + `EXPLAIN ANALYZE` benchmark test at 5 M rows (`pytest -m integration --benchmark`) asserting p95 < 50 ms → `get_vehicle_genealogy`
-- [ ] **[F]** ADR-010 dbmate over ORM
+- [x] **[F]** `0001_dims.sql` full, `0002_facts.sql` (partitioned `fact_measurement`, generated `deviation`/`out_of_tolerance`, all indexes), `0003_containment.sql`, `0004_roles.sql` (five roles + GRANTs) → ingest, tools, api; **needs** `line.yaml` ids for the dim seed
+- [x] **[F]** Dim seed loader (`qgate-gen seed-dims --db`) from `line.yaml` → ingest FKs resolve
+- [x] **[F]** `qgate_ingest`: consumer group `ingest` on three topics, Avro decode, Pydantic validate, idempotent upsert (`ON CONFLICT DO NOTHING` on natural keys), DLQ on failure, commit after write, `/health` `/metrics` → Postgres has genealogy
+- [x] **[F]** Integration test (testcontainers): produce 100 vehicles → rows match; replay same stream → no duplicates; poison message → one DLQ record → `make integration`
+- [x] **[F]** `db/queries/genealogy.sql` + `EXPLAIN ANALYZE` benchmark test at 5 M rows (`pytest -m integration --benchmark`) asserting p95 < 50 ms → `get_vehicle_genealogy`
+- [x] **[F]** ADR-010 dbmate over ORM
 
 ### 1.4 Goldens — before any agent code
 
-- [ ] **[F]** `knowledge/fault_map.yaml`: ~10 fault codes → candidate stations, all ids from `line.yaml` → `hypothesise`; **needs** 1.1 line.yaml
-- [ ] **[F]** `qgate-gen goldens-candidates --scenario` prints failing VINs with ground-truth context so you can pick trigger VINs → authoring
-- [ ] **[F]** 50 golden YAMLs (`isolated` 12, `drift` 12, `lot` 8, `bench` 8, `contradictory` 6, `overlap` 4) with expected decision, bounds, tolerance, human action → eval harness
-- [ ] **[F]** Golden schema validator test (`pytest -m unit`): every file parses, families count to 50, referenced scenario/station ids exist → protects the set
-- [ ] **[G]** **Gate 1:** any VIN's full build path from the DB in < 50 ms p95; `git tag goldens-v1` pushed; CI green
+- [x] **[F]** `knowledge/fault_map.yaml`: ~10 fault codes → candidate stations, all ids from `line.yaml` → `hypothesise`; **needs** 1.1 line.yaml
+- [x] **[F]** `qgate-gen goldens-candidates --scenario` prints failing VINs with ground-truth context so you can pick trigger VINs → authoring
+- [x] **[F]** 50 golden YAMLs (`isolated` 12, `drift` 12, `lot` 8, `bench` 8, `contradictory` 6, `overlap` 4) with expected decision, bounds, tolerance, human action → eval harness
+- [x] **[F]** Golden schema validator test (`pytest -m unit`): every file parses, families count to 50, referenced scenario/station ids exist → protects the set
+- [x] **[G]** **Gate 1:** any VIN's full build path from the DB in < 50 ms p95; `git tag goldens-v1` pushed; CI green
 
 ---
 

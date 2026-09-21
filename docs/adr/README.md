@@ -13,4 +13,4 @@ One page per decision. Never edited after acceptance; a changed decision is a ne
 | 007 | Event-driven trigger, HTTP resume | Phase 3 |
 | 008 | `api` owns containment state; agent is read-only on Postgres | Phase 3 |
 | 009 | Two `detect` processes from one image | Phase 2 |
-| 010 | dbmate SQL migrations over an ORM | Phase 1 |
+| [010](0010-dbmate-sql-migrations.md) | dbmate SQL migrations over an ORM | Accepted |
