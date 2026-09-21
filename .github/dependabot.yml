@@ -1,15 +1,27 @@
+# One grouped PR per ecosystem per month; security advisories still open immediately.
 version: 2
 updates:
   - package-ecosystem: uv
     directory: /
-    schedule: { interval: weekly }
-    open-pull-requests-limit: 5
+    schedule: { interval: monthly }
+    open-pull-requests-limit: 2
+    groups:
+      python: { patterns: ["*"] }
   - package-ecosystem: npm
     directory: /console
-    schedule: { interval: weekly }
+    schedule: { interval: monthly }
+    open-pull-requests-limit: 2
+    groups:
+      console: { patterns: ["*"] }
   - package-ecosystem: docker
-    directories: ["/services/*", "/console", "/pipelines"]
-    schedule: { interval: weekly }
+    directories: ["/docker", "/services/*", "/console"]
+    schedule: { interval: monthly }
+    open-pull-requests-limit: 1
+    groups:
+      images: { patterns: ["*"], update-types: ["minor", "patch"] }
   - package-ecosystem: github-actions
     directory: /
-    schedule: { interval: weekly }
+    schedule: { interval: monthly }
+    open-pull-requests-limit: 1
+    groups:
+      actions: { patterns: ["*"] }
