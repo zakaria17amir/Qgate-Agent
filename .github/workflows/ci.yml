@@ -18,10 +18,10 @@ jobs:
   lint:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
         with: { version: "${{ env.UV_VERSION }}" }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with: { node-version: "24", cache: npm, cache-dependency-path: console/package-lock.json }
       - run: make install
       - run: make lint
@@ -30,21 +30,21 @@ jobs:
   unit:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
         with: { version: "${{ env.UV_VERSION }}" }
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
       - run: uv sync --all-packages --group dev
       - run: cp .env.example .env
       - run: make unit
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with: { name: coverage, path: coverage.xml }
 
   contract:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
         with: { version: "${{ env.UV_VERSION }}" }
       - run: uv sync --all-packages --group dev
       - run: make contract
@@ -52,8 +52,8 @@ jobs:
   integration:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
         with: { version: "${{ env.UV_VERSION }}" }
       - run: uv sync --all-packages --group dev
       - run: make integration
@@ -62,13 +62,13 @@ jobs:
     needs: [unit, contract, integration]
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
         with: { version: "${{ env.UV_VERSION }}" }
       - run: cp .env.example .env
       - run: uv sync --all-packages --group dev
       - run: make eval-replay
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with: { name: eval-report, path: eval/report.md }
 
@@ -76,23 +76,23 @@ jobs:
     runs-on: ubuntu-24.04
     permissions: { contents: read, security-events: write }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { fetch-depth: 0 }
-      - uses: astral-sh/setup-uv@v3
+      - uses: astral-sh/setup-uv@v7
         with: { version: "${{ env.UV_VERSION }}" }
       - run: uv sync --all-packages --group dev
       - run: uv run pip-audit
-      - uses: gitleaks/gitleaks-action@v2
+      - uses: gitleaks/gitleaks-action@v3
         env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
-      - uses: aquasecurity/trivy-action@0.28.0
+      - uses: aquasecurity/trivy-action@v0.36.0
         with: { scan-type: fs, severity: CRITICAL, exit-code: "1", ignore-unfixed: true }
 
   build:
     needs: [lint]
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
+      - uses: actions/checkout@v7
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
       - run: cp .env.example .env
       - run: make build
