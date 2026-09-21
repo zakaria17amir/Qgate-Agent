@@ -16,7 +16,7 @@ dependencies = [
     "fastapi>=0.115,<1",
     "uvicorn[standard]>=0.30,<1",
     "psycopg[binary,pool]>=3.2,<4",
-    "aiosql>=12,<13",
+    "aiosql>=12,<16",
     "pyyaml>=6,<7",
     "uuid7>=0.1,<1",
 ]
