@@ -6,7 +6,6 @@ its side effect succeeded, which is what makes ingest at-least-once and the upse
 
 import base64
 import json
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, cast
 
@@ -100,32 +99,23 @@ def produce(settings: Settings, p: Producer, record: Record) -> Producer:
     return p
 
 
-@dataclass
-class Polled[M: BaseModel]:
-    record: M
-    key: str
-    message: Message
-
-
-def poll_record[M: BaseModel](
-    settings: Settings, c: Consumer, model: type[M], timeout: float
-) -> Polled[M] | None:
-    """Poll once; return the decoded record or ``None`` on timeout. Raises on decode failure.
-
-    The raw :class:`Message` is returned too so the caller can commit it or route it to the DLQ.
-    """
+def poll(c: Consumer, timeout: float) -> Message | None:
+    """Poll once; ``None`` on timeout. Broker-level errors raise; decode errors are the caller's."""
     msg = c.poll(timeout)
     if msg is None:
         return None
     if msg.error():
         raise KafkaException(msg.error())
+    return msg
+
+
+def decode[M: BaseModel](settings: Settings, msg: Message, model: type[M]) -> M:
+    """Deserialise a Confluent-wire-format Avro payload into ``model`` (raises on bad bytes)."""
     topic = msg.topic() or ""
     des = _deserializers.get(topic) or _deserializers.setdefault(
         topic, deserializer(settings, topic, model)
     )
-    record = des(msg.value(), SerializationContext(topic, MessageField.VALUE))
-    key = msg.key()
-    return Polled(cast(M, record), key.decode() if isinstance(key, bytes) else str(key), msg)
+    return cast(M, des(msg.value(), SerializationContext(topic, MessageField.VALUE)))
 
 
 def send_to_dlq(p: Producer, msg: Message, error: Exception) -> None:
