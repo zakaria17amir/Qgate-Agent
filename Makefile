@@ -91,8 +91,8 @@ scan: ## dependency + image + secret scans
 	gitleaks detect --no-git --source .
 	trivy fs --severity CRITICAL --exit-code 1 .
 
-build: ## build all images for linux/amd64,arm64 without pushing
-	docker buildx bake --file docker-compose.yml --set '*.platform=linux/amd64,linux/arm64'
+build: ## build every image for the host platform (release.yml does multi-arch)
+	$(COMPOSE) $(CORE) $(EVAL) build
 
 goldens-freeze: ## tag the golden set (run once at the end of Phase 1)
 	git tag -a goldens-v1 -m "Golden cases frozen before the agent exists"

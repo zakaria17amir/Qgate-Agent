@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  UV_VERSION: "0.4.29"
+  UV_VERSION: "0.12.17"
   PYTHON_VERSION: "3.12"
 
 jobs:
@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: astral-sh/setup-uv@v10.1.0
         with: { version: "${{ env.UV_VERSION }}" }
       - uses: actions/setup-node@v4
         with: { node-version: "24", cache: npm, cache-dependency-path: console/package-lock.json }
@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: astral-sh/setup-uv@v10.1.0
         with: { version: "${{ env.UV_VERSION }}" }
       - uses: docker/setup-buildx-action@v3
       - run: uv sync --all-packages --group dev
@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: astral-sh/setup-uv@v10.1.0
         with: { version: "${{ env.UV_VERSION }}" }
       - run: uv sync --all-packages --group dev
       - run: make contract
@@ -53,7 +53,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: astral-sh/setup-uv@v10.1.0
         with: { version: "${{ env.UV_VERSION }}" }
       - run: uv sync --all-packages --group dev
       - run: make integration
@@ -63,7 +63,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: astral-sh/setup-uv@v10.1.0
         with: { version: "${{ env.UV_VERSION }}" }
       - run: cp .env.example .env
       - run: uv sync --all-packages --group dev
@@ -78,13 +78,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - uses: astral-sh/setup-uv@v3
+      - uses: astral-sh/setup-uv@v10.1.0
         with: { version: "${{ env.UV_VERSION }}" }
       - run: uv sync --all-packages --group dev
       - run: uv run pip-audit
-      - uses: gitleaks/gitleaks-action@v2
+      - uses: gitleaks/gitleaks-action@v3
         env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
-      - uses: aquasecurity/trivy-action@0.28.0
+      - uses: aquasecurity/trivy-action@0.36.0
         with: { scan-type: fs, severity: CRITICAL, exit-code: "1", ignore-unfixed: true }
 
   build:

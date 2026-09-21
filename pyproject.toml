@@ -24,13 +24,14 @@ qgate-generator = { workspace = true }
 
 [dependency-groups]
 dev = [
-    "ruff>=0.6,<1",
-    "mypy>=1.11,<2",
-    "pytest>=8,<9",
-    "pytest-asyncio>=0.24,<1",
-    "pytest-cov>=5,<7",
-    "hypothesis>=6.100,<7",
-    "pre-commit>=3.8,<5",
+    "ruff>=0.16,<1",
+    "mypy>=2.3,<3",
+    "pytest>=9.1,<10",
+    "pytest-asyncio>=1.4,<2",
+    "pytest-cov>=7.1,<8",
+    "hypothesis>=6.168,<7",
+    "pre-commit>=4.6,<5",
+    "pip-audit>=2.10,<3",
 ]
 
 [tool.ruff]
