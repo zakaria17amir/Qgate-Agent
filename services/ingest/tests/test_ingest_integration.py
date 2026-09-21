@@ -37,9 +37,10 @@ def replay(settings: Settings) -> None:
 
 
 def counts(settings: Settings) -> dict[str, int]:
+    """Only this test's vehicles: the DB is shared with the genealogy benchmark's BENCH rows."""
     with psycopg.connect(settings.database_url) as conn:
         return {
-            t: conn.execute(f"select count(*) from qgate.{t}").fetchone()[0]  # type: ignore[index]
+            t: conn.execute(f"select count(*) from qgate.{t} where vin like 'SYN%'").fetchone()[0]  # type: ignore[index]
             for t in ("fact_build_event", "fact_measurement", "fact_eol_result")
         }
 
