@@ -18,7 +18,7 @@ jobs:
         service: [line-sim, ingest, detect, agent, api, mock-mes, console, pipelines]
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-qemu-action@v4
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
