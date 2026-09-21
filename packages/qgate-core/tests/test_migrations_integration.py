@@ -30,11 +30,12 @@ def test_all_tables_exist(pg_url: str) -> None:
 
 def test_generated_columns_derive_from_value(pg_url: str) -> None:
     with psycopg.connect(pg_url) as conn:
-        conn.execute("insert into qgate.dim_station values ('ST-01','x',1,60,false)")
+        # ids that no seed data uses; the transaction is rolled back anyway
+        conn.execute("insert into qgate.dim_station values ('ST-99','x',99,60,false)")
         conn.execute(
-            "insert into qgate.dim_characteristic values ('CH-01-A','ST-01','a','mm',10,9,11)"
+            "insert into qgate.dim_characteristic values ('CH-99-A','ST-99','a','mm',10,9,11)"
         )
-        conn.execute("insert into qgate.dim_bench values ('B','ST-01',0.02,0,null)")
+        conn.execute("insert into qgate.dim_bench values ('B99','ST-99',0.02,0,null)")
         conn.execute(
             "insert into qgate.fact_measurement (vin, station_id, characteristic_id, bench_id, "
             "measured_at, value, nominal, lower_limit, upper_limit) "
