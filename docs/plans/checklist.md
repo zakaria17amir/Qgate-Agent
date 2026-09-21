@@ -53,7 +53,7 @@ Today `ci.yml` fails on the first push because several `make` targets have nothi
 - [x] **[F]** `Makefile`: `unit` target skips `line-sim-test` when `SKIP_CPP=1` → fast local loop while C++ is stubbed
 - [x] **[F]** ADR-005 monorepo/uv, ADR-006 provider-agnostic LLM + cassettes → index in `docs/adr/README.md`
 - [x] **[F]** `pre-commit run --all-files` clean → hooks enforce style from here on
-- [ ] **[G]** **Gate 0:** `make up-infra` brings up infra; `make lint typecheck unit` pass locally (done); CI green on `main` (pending merge)
+- [x] **[G]** **Gate 0:** `make up-infra` brings up infra; `make lint typecheck unit` pass locally; CI green on `main` (run 8aaa74a, 7/7 jobs)
 
 ---
 
