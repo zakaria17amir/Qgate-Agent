@@ -33,6 +33,7 @@ dev = [
     "pre-commit>=4.6,<5",
     "pip-audit>=2.10,<3",
     "types-pyyaml>=6,<7",
+    "testcontainers>=4.15,<5",
 ]
 
 [tool.ruff]

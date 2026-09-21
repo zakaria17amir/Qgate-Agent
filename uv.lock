@@ -2331,6 +2331,7 @@ dev = [
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "ruff" },
+    { name = "testcontainers" },
     { name = "types-pyyaml" },
 ]
 
@@ -2346,6 +2347,7 @@ dev = [
     { name = "pytest-asyncio", specifier = ">=1.4,<2" },
     { name = "pytest-cov", specifier = ">=7.1,<8" },
     { name = "ruff", specifier = ">=0.16,<1" },
+    { name = "testcontainers", specifier = ">=4.15,<5" },
     { name = "types-pyyaml", specifier = ">=6,<7" },
 ]
 
@@ -2489,19 +2491,11 @@ dependencies = [
     { name = "qgate-core" },
 ]
 
-[package.dev-dependencies]
-test = [
-    { name = "testcontainers" },
-]
-
 [package.metadata]
 requires-dist = [
     { name = "psycopg", extras = ["binary", "pool"], specifier = ">=3.3,<4" },
     { name = "qgate-core", editable = "packages/qgate-core" },
 ]
-
-[package.metadata.requires-dev]
-test = [{ name = "testcontainers", extras = ["postgres", "kafka"], specifier = ">=4.15,<5" }]
 
 [[package]]
 name = "qgate-mock-mes"
