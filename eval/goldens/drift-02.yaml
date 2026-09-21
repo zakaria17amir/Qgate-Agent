@@ -1,0 +1,19 @@
+id: drift-02
+family: drift
+scenario: tool_wear
+seed: 2
+trigger:
+  vin: SYN00000000001074
+  fault_codes:
+  - F-19
+expected:
+  decision: WINDOW
+  station_id: ST-19
+  window_start_sequence: 1016
+  tolerance_takts: 15
+  lot_ids: []
+human:
+  action: AMEND
+  amend_start_delta_takts: -10
+  reason: widen to be safe near the fuzzy onset
+notes: Gradual tool wear; the window starts at the first true out-of-tolerance vehicle.

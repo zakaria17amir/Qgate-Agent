@@ -1,0 +1,19 @@
+id: bench-02
+family: bench
+scenario: bench_drift
+seed: 2
+trigger:
+  vin: SYN00000000001102
+  fault_codes:
+  - F-30
+expected:
+  decision: NONE
+  station_id: ST-30
+  window_start_sequence: null
+  tolerance_takts: 15
+  lot_ids: []
+human:
+  action: APPROVE
+  amend_start_delta_takts: null
+  reason: null
+notes: The bench drifted; the car is good. Propose nothing and flag the bench.

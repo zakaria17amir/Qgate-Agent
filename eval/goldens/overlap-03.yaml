@@ -1,0 +1,21 @@
+id: overlap-03
+family: overlap
+scenario: overlap
+seed: 3
+trigger:
+  vin: SYN00000000001100
+  fault_codes:
+  - F-19
+  - F-24
+expected:
+  decision: MULTI
+  station_id: ST-24
+  window_start_sequence: 1000
+  tolerance_takts: 15
+  lot_ids:
+  - L-24-0004
+human:
+  action: APPROVE
+  amend_start_delta_takts: null
+  reason: null
+notes: 'A bad lot inside a drift window: two containments, not one merged blob.'

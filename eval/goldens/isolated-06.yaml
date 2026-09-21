@@ -1,0 +1,19 @@
+id: isolated-06
+family: isolated
+scenario: clean_baseline
+seed: 6
+trigger:
+  vin: SYN00000000000827
+  fault_codes:
+  - F-13
+expected:
+  decision: SINGLE
+  station_id: ST-13
+  window_start_sequence: null
+  tolerance_takts: 15
+  lot_ids: []
+human:
+  action: APPROVE
+  amend_start_delta_takts: null
+  reason: null
+notes: A one-off defect with no siblings; anything wider than one vehicle over-holds.

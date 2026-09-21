@@ -1,0 +1,20 @@
+id: lot-08
+family: lot
+scenario: bad_lot
+seed: 8
+trigger:
+  vin: SYN00000000000106
+  fault_codes:
+  - F-24
+expected:
+  decision: LOT
+  station_id: ST-24
+  window_start_sequence: null
+  tolerance_takts: 15
+  lot_ids:
+  - L-24-0004
+human:
+  action: APPROVE
+  amend_start_delta_takts: null
+  reason: null
+notes: Carriers are interleaved with good lots; a time window is the wrong shape.

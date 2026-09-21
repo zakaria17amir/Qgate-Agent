@@ -2454,6 +2454,7 @@ dependencies = [
     { name = "httpx" },
     { name = "pyyaml" },
     { name = "qgate-core" },
+    { name = "qgate-generator" },
     { name = "rich" },
     { name = "typer" },
 ]
@@ -2463,6 +2464,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28,<1" },
     { name = "pyyaml", specifier = ">=6,<7" },
     { name = "qgate-core", editable = "packages/qgate-core" },
+    { name = "qgate-generator", editable = "packages/qgate-generator" },
     { name = "rich", specifier = ">=15,<16" },
     { name = "typer", specifier = ">=0.27,<1" },
 ]

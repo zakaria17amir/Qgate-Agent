@@ -23,3 +23,15 @@ def run(
     if not cases:
         return
     raise typer.Exit(code=2)
+
+
+@app.command()
+def goldens(
+    out: Path = typer.Option(Path("eval/goldens")),
+    scenarios_dir: Path = typer.Option(Path("scenarios")),
+) -> None:
+    """(Re)author the fifty golden cases from generator ground truth. Deliberate, reviewed."""
+    from qgate_eval.author import author
+
+    written = author(scenarios_dir, out)
+    typer.echo(f"{len(written)} goldens written to {out}")

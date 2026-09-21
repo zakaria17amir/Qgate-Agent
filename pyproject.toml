@@ -69,6 +69,7 @@ markers = [
     "contract: schemathesis / schema-registry compatibility",
     "eval: golden-case evaluation harness",
     "chaos: fault-injection scenarios against a running stack",
+    "slow: no external services but minutes of CPU (golden regeneration)",
 ]
 addopts = "-ra --strict-markers --import-mode=importlib"
 

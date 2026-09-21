@@ -78,7 +78,7 @@ contract: ## schemathesis against api + mock-mes OpenAPI; Avro compatibility
 	uv run pytest -m contract || [ $$? -eq 5 ]
 
 integration: ## testcontainers: Postgres + Redpanda end to end
-	uv run pytest -m integration || [ $$? -eq 5 ]
+	uv run pytest -m "integration or slow" || [ $$? -eq 5 ]
 
 eval-replay: ## golden cases with recorded LLM responses; compare to eval/baseline.json
 	uv run qgate-eval run --mode replay --baseline eval/baseline.json

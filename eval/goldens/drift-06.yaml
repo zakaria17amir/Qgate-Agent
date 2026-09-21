@@ -1,0 +1,19 @@
+id: drift-06
+family: drift
+scenario: tool_wear
+seed: 6
+trigger:
+  vin: SYN00000000001050
+  fault_codes:
+  - F-19
+expected:
+  decision: WINDOW
+  station_id: ST-19
+  window_start_sequence: 1025
+  tolerance_takts: 15
+  lot_ids: []
+human:
+  action: APPROVE
+  amend_start_delta_takts: null
+  reason: null
+notes: Gradual tool wear; the window starts at the first true out-of-tolerance vehicle.
