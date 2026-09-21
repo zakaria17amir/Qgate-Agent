@@ -1,0 +1,12 @@
+# The EOL bench EOL-B2 drifts; the cars are good. Any containment is the wrong answer.
+id: bench_drift
+seed: 42
+vehicles: 2000
+injects:
+  - kind: bench_bias
+    station_id: ST-30
+    characteristic_id: CH-30-HEADLAMP
+    bench_id: EOL-B2
+    start_sequence: 600
+    end_sequence: 1400
+    magnitude: 1.5

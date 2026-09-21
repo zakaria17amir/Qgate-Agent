@@ -1,0 +1,5 @@
+# Nothing wrong. Only base-rate random defects; the agent must not manufacture patterns.
+id: clean_baseline
+seed: 42
+vehicles: 2000
+injects: []

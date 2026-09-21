@@ -1,0 +1,10 @@
+# One shared disturbance across both cockpit-module characteristics: one cause, two alerts.
+id: correlated_noise
+seed: 42
+vehicles: 2000
+injects:
+  - kind: noise
+    station_id: ST-17
+    start_sequence: 900
+    end_sequence: 1300
+    magnitude: 0.5

@@ -1,0 +1,10 @@
+# One bad parts lot at battery install. Carriers are interleaved with other lots, so a time window is the wrong containment.
+id: bad_lot
+seed: 42
+vehicles: 2000
+injects:
+  - kind: lot
+    station_id: ST-24
+    characteristic_id: CH-24-TORQUE
+    lot_id: L-24-0004
+    magnitude: 1.2

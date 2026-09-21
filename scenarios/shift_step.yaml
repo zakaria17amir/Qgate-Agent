@@ -1,0 +1,11 @@
+# Step change at a shift handover: brake-fill pressure offset from seq 700 (a shift boundary at takt 60 s).
+# Confounded on purpose: is it the crew or the equipment?
+id: shift_step
+seed: 42
+vehicles: 2000
+injects:
+  - kind: step
+    station_id: ST-18
+    characteristic_id: CH-18-PRESSURE
+    start_sequence: 700
+    magnitude: 0.8

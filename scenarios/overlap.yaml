@@ -1,0 +1,16 @@
+# Bad lot plus station drift in the same period: two containments, not one merged window.
+id: overlap
+seed: 42
+vehicles: 2000
+injects:
+  - kind: lot
+    station_id: ST-24
+    characteristic_id: CH-24-TORQUE
+    lot_id: L-24-0004
+    magnitude: 1.2
+  - kind: drift
+    station_id: ST-19
+    characteristic_id: CH-19-TORQUE
+    start_sequence: 800
+    end_sequence: 1400
+    magnitude: 2.0
