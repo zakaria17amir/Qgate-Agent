@@ -1,0 +1,412 @@
+# The line. Single source of truth for station and characteristic ids; scenarios, the fault
+# map, goldens and dim seeding all reference these ids. Tolerances are illustrative.
+# repeatability_sigma is a fraction of half-tolerance (bench noise relative to the band).
+takt_s: 60
+shifts:
+- id: S1
+  label: Early
+  starts_at: '06:00'
+  ends_at: '14:00'
+  crew: A
+- id: S2
+  label: Late
+  starts_at: '14:00'
+  ends_at: '22:00'
+  crew: B
+- id: S3
+  label: Night
+  starts_at: '22:00'
+  ends_at: '06:00'
+  crew: C
+eol_benches:
+- id: EOL-B1
+  station_id: ST-30
+  repeatability_sigma: 0.02
+  bias: 0.0
+- id: EOL-B2
+  station_id: ST-30
+  repeatability_sigma: 0.02
+  bias: 0.0
+- id: EOL-B3
+  station_id: ST-30
+  repeatability_sigma: 0.03
+  bias: 0.0
+stations:
+- id: ST-01
+  name: Underbody weld
+  sequence_pos: 1
+  fits_lot: false
+  characteristics:
+  - id: CH-01-WELD
+    name: Weld current
+    unit: kA
+    nominal: 9.5
+    lower_limit: 8.9
+    upper_limit: 10.1
+- id: ST-02
+  name: Side frame weld
+  sequence_pos: 2
+  fits_lot: false
+  characteristics:
+  - id: CH-02-WELD
+    name: Weld current
+    unit: kA
+    nominal: 9.8
+    lower_limit: 9.2
+    upper_limit: 10.4
+- id: ST-03
+  name: Roof join
+  sequence_pos: 3
+  fits_lot: false
+  characteristics:
+  - id: CH-03-GAP
+    name: Roof gap
+    unit: mm
+    nominal: 1.5
+    lower_limit: 1.0
+    upper_limit: 2.0
+- id: ST-04
+  name: Door hang left
+  sequence_pos: 4
+  fits_lot: true
+  characteristics:
+  - id: CH-04-GAP
+    name: Door gap
+    unit: mm
+    nominal: 4.0
+    lower_limit: 3.3
+    upper_limit: 4.7
+  - id: CH-04-FLUSH
+    name: Door flush
+    unit: mm
+    nominal: 0.0
+    lower_limit: -0.8
+    upper_limit: 0.8
+- id: ST-05
+  name: Door hang right
+  sequence_pos: 5
+  fits_lot: true
+  characteristics:
+  - id: CH-05-GAP
+    name: Door gap
+    unit: mm
+    nominal: 4.0
+    lower_limit: 3.3
+    upper_limit: 4.7
+  - id: CH-05-FLUSH
+    name: Door flush
+    unit: mm
+    nominal: 0.0
+    lower_limit: -0.8
+    upper_limit: 0.8
+- id: ST-06
+  name: Hood fit
+  sequence_pos: 6
+  fits_lot: false
+  characteristics:
+  - id: CH-06-GAP
+    name: Hood gap
+    unit: mm
+    nominal: 3.5
+    lower_limit: 2.8
+    upper_limit: 4.2
+- id: ST-07
+  name: Tailgate fit
+  sequence_pos: 7
+  fits_lot: false
+  characteristics:
+  - id: CH-07-GAP
+    name: Tailgate gap
+    unit: mm
+    nominal: 3.5
+    lower_limit: 2.8
+    upper_limit: 4.2
+- id: ST-08
+  name: Fender bolt
+  sequence_pos: 8
+  fits_lot: false
+  characteristics:
+  - id: CH-08-TORQUE
+    name: Fender bolt torque
+    unit: Nm
+    nominal: 12.0
+    lower_limit: 10.5
+    upper_limit: 13.5
+- id: ST-09
+  name: Body geometry
+  sequence_pos: 9
+  fits_lot: false
+  characteristics:
+  - id: CH-09-GEOM
+    name: Geometry deviation
+    unit: mm
+    nominal: 0.0
+    lower_limit: -1.0
+    upper_limit: 1.0
+- id: ST-10
+  name: Sealing
+  sequence_pos: 10
+  fits_lot: false
+  characteristics:
+  - id: CH-10-BEAD
+    name: Seam bead width
+    unit: mm
+    nominal: 6.0
+    lower_limit: 5.0
+    upper_limit: 7.0
+- id: ST-11
+  name: Pretreatment
+  sequence_pos: 11
+  fits_lot: false
+  characteristics:
+  - id: CH-11-PH
+    name: Bath pH
+    unit: pH
+    nominal: 5.0
+    lower_limit: 4.6
+    upper_limit: 5.4
+- id: ST-12
+  name: E-coat
+  sequence_pos: 12
+  fits_lot: false
+  characteristics:
+  - id: CH-12-THICK
+    name: E-coat thickness
+    unit: um
+    nominal: 22.0
+    lower_limit: 18.0
+    upper_limit: 26.0
+- id: ST-13
+  name: Primer
+  sequence_pos: 13
+  fits_lot: false
+  characteristics:
+  - id: CH-13-THICK
+    name: Primer thickness
+    unit: um
+    nominal: 35.0
+    lower_limit: 29.0
+    upper_limit: 41.0
+  - id: CH-13-VISC
+    name: Primer viscosity
+    unit: s
+    nominal: 28.0
+    lower_limit: 25.0
+    upper_limit: 31.0
+- id: ST-14
+  name: Base coat
+  sequence_pos: 14
+  fits_lot: false
+  characteristics:
+  - id: CH-14-THICK
+    name: Base coat thickness
+    unit: um
+    nominal: 15.0
+    lower_limit: 12.0
+    upper_limit: 18.0
+- id: ST-15
+  name: Clear coat
+  sequence_pos: 15
+  fits_lot: false
+  characteristics:
+  - id: CH-15-THICK
+    name: Clear coat thickness
+    unit: um
+    nominal: 45.0
+    lower_limit: 39.0
+    upper_limit: 51.0
+  - id: CH-15-GLOSS
+    name: Gloss
+    unit: GU
+    nominal: 90.0
+    lower_limit: 86.0
+    upper_limit: 94.0
+- id: ST-16
+  name: Wiring harness
+  sequence_pos: 16
+  fits_lot: true
+  characteristics:
+  - id: CH-16-RES
+    name: Harness resistance
+    unit: mOhm
+    nominal: 12.0
+    lower_limit: 9.0
+    upper_limit: 15.0
+- id: ST-17
+  name: Cockpit module
+  sequence_pos: 17
+  fits_lot: false
+  characteristics:
+  - id: CH-17-TORQUE
+    name: Cockpit bolt torque
+    unit: Nm
+    nominal: 22.0
+    lower_limit: 19.5
+    upper_limit: 24.5
+  - id: CH-17-GAP
+    name: Cockpit gap
+    unit: mm
+    nominal: 2.0
+    lower_limit: 1.4
+    upper_limit: 2.6
+- id: ST-18
+  name: Brake fill
+  sequence_pos: 18
+  fits_lot: false
+  characteristics:
+  - id: CH-18-PRESSURE
+    name: Brake line pressure
+    unit: bar
+    nominal: 120.0
+    lower_limit: 112.0
+    upper_limit: 128.0
+- id: ST-19
+  name: Steering column
+  sequence_pos: 19
+  fits_lot: true
+  characteristics:
+  - id: CH-19-TORQUE
+    name: Column bolt torque
+    unit: Nm
+    nominal: 45.0
+    lower_limit: 41.0
+    upper_limit: 49.0
+- id: ST-20
+  name: Subframe front
+  sequence_pos: 20
+  fits_lot: false
+  characteristics:
+  - id: CH-20-TORQUE
+    name: Subframe bolt torque
+    unit: Nm
+    nominal: 180.0
+    lower_limit: 165.0
+    upper_limit: 195.0
+- id: ST-21
+  name: Subframe rear
+  sequence_pos: 21
+  fits_lot: false
+  characteristics:
+  - id: CH-21-TORQUE
+    name: Subframe bolt torque
+    unit: Nm
+    nominal: 180.0
+    lower_limit: 165.0
+    upper_limit: 195.0
+- id: ST-22
+  name: Wheel fastening
+  sequence_pos: 22
+  fits_lot: false
+  characteristics:
+  - id: CH-22-TORQUE
+    name: Wheel bolt torque
+    unit: Nm
+    nominal: 140.0
+    lower_limit: 130.0
+    upper_limit: 150.0
+- id: ST-23
+  name: Seat install
+  sequence_pos: 23
+  fits_lot: true
+  characteristics:
+  - id: CH-23-TORQUE
+    name: Seat rail torque
+    unit: Nm
+    nominal: 40.0
+    lower_limit: 36.0
+    upper_limit: 44.0
+- id: ST-24
+  name: Battery install
+  sequence_pos: 24
+  fits_lot: true
+  characteristics:
+  - id: CH-24-TORQUE
+    name: Battery clamp torque
+    unit: Nm
+    nominal: 8.0
+    lower_limit: 7.0
+    upper_limit: 9.0
+  - id: CH-24-VOLT
+    name: Battery voltage
+    unit: V
+    nominal: 12.6
+    lower_limit: 12.2
+    upper_limit: 13.0
+- id: ST-25
+  name: Coolant fill
+  sequence_pos: 25
+  fits_lot: false
+  characteristics:
+  - id: CH-25-PRESSURE
+    name: Coolant system pressure
+    unit: bar
+    nominal: 1.4
+    lower_limit: 1.2
+    upper_limit: 1.6
+- id: ST-26
+  name: AC charge
+  sequence_pos: 26
+  fits_lot: false
+  characteristics:
+  - id: CH-26-PRESSURE
+    name: AC charge pressure
+    unit: bar
+    nominal: 8.0
+    lower_limit: 7.2
+    upper_limit: 8.8
+- id: ST-27
+  name: Glass bonding
+  sequence_pos: 27
+  fits_lot: false
+  characteristics:
+  - id: CH-27-BEAD
+    name: Adhesive bead height
+    unit: mm
+    nominal: 10.0
+    lower_limit: 8.5
+    upper_limit: 11.5
+- id: ST-28
+  name: Bumper fit
+  sequence_pos: 28
+  fits_lot: true
+  characteristics:
+  - id: CH-28-GAP
+    name: Bumper gap
+    unit: mm
+    nominal: 3.0
+    lower_limit: 2.3
+    upper_limit: 3.7
+- id: ST-29
+  name: Wheel alignment
+  sequence_pos: 29
+  fits_lot: false
+  characteristics:
+  - id: CH-29-TOE
+    name: Front toe
+    unit: deg
+    nominal: 0.1
+    lower_limit: -0.05
+    upper_limit: 0.25
+- id: ST-30
+  name: End-of-line test
+  sequence_pos: 30
+  fits_lot: false
+  characteristics:
+  - id: CH-30-HEADLAMP
+    name: Headlamp aim
+    unit: deg
+    nominal: 0.0
+    lower_limit: -0.3
+    upper_limit: 0.3
+  - id: CH-30-EMISS
+    name: Emission CO
+    unit: pct
+    nominal: 0.2
+    lower_limit: 0.05
+    upper_limit: 0.35
+  - id: CH-30-NOISE
+    name: Cabin noise
+    unit: dB
+    nominal: 62.0
+    lower_limit: 59.0
+    upper_limit: 65.0
