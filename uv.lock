@@ -2385,6 +2385,7 @@ name = "qgate-core"
 version = "0.1.0"
 source = { editable = "packages/qgate-core" }
 dependencies = [
+    { name = "aiosql" },
     { name = "confluent-kafka", extra = ["avro", "schemaregistry"] },
     { name = "fastapi" },
     { name = "fastavro" },
@@ -2392,6 +2393,7 @@ dependencies = [
     { name = "opentelemetry-exporter-otlp-proto-http" },
     { name = "opentelemetry-sdk" },
     { name = "prometheus-client" },
+    { name = "psycopg", extra = ["binary", "pool"] },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "pyjwt" },
@@ -2402,6 +2404,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "aiosql", specifier = ">=15,<16" },
     { name = "confluent-kafka", extras = ["avro", "schemaregistry"], specifier = ">=2.15,<3" },
     { name = "fastapi", specifier = ">=0.141,<1" },
     { name = "fastavro", specifier = ">=1.12,<2" },
@@ -2409,6 +2412,7 @@ requires-dist = [
     { name = "opentelemetry-exporter-otlp-proto-http", specifier = ">=1.44,<2" },
     { name = "opentelemetry-sdk", specifier = ">=1.44,<2" },
     { name = "prometheus-client", specifier = ">=0.26,<1" },
+    { name = "psycopg", extras = ["binary", "pool"], specifier = ">=3.3,<4" },
     { name = "pydantic", specifier = ">=2.13,<3" },
     { name = "pydantic-settings", specifier = ">=2.15,<3" },
     { name = "pyjwt", specifier = ">=2.14,<3" },
