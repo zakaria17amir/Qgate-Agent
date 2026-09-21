@@ -72,14 +72,19 @@ def test_roles_are_least_privilege(
         conn.execute(statement)
 
 
-def test_ingest_can_write_facts_and_agent_can_read_them(role_url: Callable[[str], str]) -> None:
+def test_ingest_can_write_facts_and_agent_can_read_them(
+    pg_url: str, role_url: Callable[[str], str]
+) -> None:
     with psycopg.connect(role_url("ingest_rw")) as conn:
-        conn.execute(
-            "insert into qgate.dim_shift values ('S9','x','06:00','14:00','A') "
-            "on conflict do nothing"
-        )
+        conn.execute("insert into qgate.dim_shift values ('S9','x','06:00','14:00','A')")
         conn.commit()
-    with psycopg.connect(role_url("agent_ro")) as conn:
-        assert conn.execute(
-            "select count(*) from qgate.dim_shift where shift_id = 'S9'"
-        ).fetchone() == (1,)
+    try:
+        with psycopg.connect(role_url("agent_ro")) as conn:
+            n = conn.execute(
+                "select count(*) from qgate.dim_shift where shift_id = 'S9'"
+            ).fetchone()
+        assert n == (1,)
+    finally:  # the database is session-scoped; leave it as we found it
+        with psycopg.connect(pg_url) as conn:
+            conn.execute("delete from qgate.dim_shift where shift_id = 'S9'")
+            conn.commit()
