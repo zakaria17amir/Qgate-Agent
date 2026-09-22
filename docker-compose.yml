@@ -166,6 +166,7 @@ services:
     profiles: [core]
     environment:
       <<: *python-env
+      PORT: "8001"
       DATABASE_URL_AGENT_RO: postgres://agent_ro:${POSTGRES_PASSWORD}@postgres:5432/qgate
       DATABASE_URL_CHECKPOINT_RW: postgres://checkpoint_rw:${POSTGRES_PASSWORD}@postgres:5432/qgate
     volumes:
