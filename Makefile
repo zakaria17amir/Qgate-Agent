@@ -46,7 +46,7 @@ migrate: ## apply db/migrations with dbmate
 	$(COMPOSE) $(CORE) run --rm migrate up
 
 token: ## mint a dev JWT: make token ROLE=approver SUB=alice
-	$(COMPOSE) $(CORE) run --rm api python -m qgate_api.cli token --role $(or $(ROLE),approver) --sub $(or $(SUB),dev)
+	$(COMPOSE) $(CORE) run --rm --no-deps --entrypoint api-cli api token --role $(or $(ROLE),approver) --sub $(or $(SUB),dev)
 
 # --- quality gates (CI jobs) ---------------------------------------------------
 

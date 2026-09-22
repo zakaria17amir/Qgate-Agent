@@ -13,6 +13,7 @@ dependencies = [
 
 [project.scripts]
 api = "qgate_api.main:main"
+api-cli = "qgate_api.cli:app"
 
 [build-system]
 requires = ["hatchling"]
