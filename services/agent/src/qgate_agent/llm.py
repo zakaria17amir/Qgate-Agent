@@ -88,25 +88,20 @@ class Ask:
         answer, usage = self.model.invoke(prompt, schema)
         if self.mode == "record":
             self.dir.mkdir(parents=True, exist_ok=True)
-            key.write_text(
-                json.dumps(
-                    {
-                        "prompt_id": prompt_id,
-                        "version": version,
-                        "model": self.model.name,
-                        "inputs": inputs,
-                        "output": answer.model_dump(mode="json"),
-                        "usage": {
-                            "prompt_tokens": usage.prompt_tokens,
-                            "completion_tokens": usage.completion_tokens,
-                        },
-                    },
-                    indent=1,
-                    sort_keys=True,
-                    default=str,
-                ),
-                encoding="utf8",
-            )
+            body = {
+                "prompt_id": prompt_id,
+                "version": version,
+                "model": self.model.name,
+                "inputs": inputs,
+                "output": answer.model_dump(mode="json"),
+                "usage": {
+                    "prompt_tokens": usage.prompt_tokens,
+                    "completion_tokens": usage.completion_tokens,
+                },
+            }
+            # LF and a trailing newline regardless of host OS: cassettes are committed files
+            with key.open("w", encoding="utf8", newline="\n") as f:
+                f.write(json.dumps(body, indent=1, sort_keys=True, default=str) + "\n")
         if not isinstance(answer, schema):
             raise TypeError(f"model returned {type(answer).__name__}, expected {schema.__name__}")
         return answer, usage
