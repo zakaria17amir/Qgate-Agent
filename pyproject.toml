@@ -60,6 +60,10 @@ plugins = ["pydantic.mypy"]
 mypy_path = "packages/qgate-core/src:packages/qgate-generator/src"
 exclude = ["services/line-sim", "console", "infra"]
 
+[[tool.mypy.overrides]]
+module = ["ruptures", "ruptures.*"]
+ignore_missing_imports = true  # no stubs published
+
 [tool.pytest.ini_options]
 testpaths = ["packages", "services", "pipelines", "eval/harness"]
 asyncio_mode = "auto"
