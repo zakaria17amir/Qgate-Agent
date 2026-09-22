@@ -21,11 +21,16 @@ _Published after the first nightly evaluation run. Until then this table is inte
 
 ```bash
 cp .env.example .env
-make up          # core stack
-make demo        # replay the tool-wear scenario, open http://localhost:8080
+make up                                   # core stack
+make demo SCENARIO=tool_wear SPEED=10     # C++ line-sim replays the scenario at 10x takt
+make token ROLE=approver SUB=alice        # paste it into the console's Token drawer
 ```
 
-`make help` lists every target. Each maps to one CI job.
+Open `http://localhost:8080`: failures appear in the queue as the line runs; open one, read the
+evidence, approve / amend / reject; the hold reaches the (mock) plant system only after that.
+`RUNBOOK.md` §0 walks a shift leader through it. `make help` lists every target; each maps to one
+CI job. `make chaos && make chaos-test` cuts the plant system mid-commit and kills the agent
+mid-gate, and checks that exactly one hold results either way.
 
 ## How it works
 

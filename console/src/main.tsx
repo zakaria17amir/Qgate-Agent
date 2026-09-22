@@ -16,6 +16,8 @@ import "./tokens.css";
 const client = new QueryClient({
   defaultOptions: { queries: { retry: false } },
 });
+// a new token makes every earlier answer stale, 401s included: refetch instead of waiting a poll
+window.addEventListener("qgate-token", () => void client.invalidateQueries());
 
 const router = createBrowserRouter([
   {
