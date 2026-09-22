@@ -17,7 +17,7 @@ from datetime import datetime
 import numpy as np
 
 from qgate_core import kafka
-from qgate_core.health import health_app, serve
+from qgate_core.health import health_app, ok, serve
 from qgate_core.models import AlertKind, Measurement, QualityAlert, Severity
 from qgate_core.settings import Settings
 from qgate_detect.spc import western_electric
@@ -25,7 +25,7 @@ from qgate_detect.spc import western_electric
 log = logging.getLogger("detect-worker")
 WINDOW = 500  # points kept per characteristic
 WARMUP = 20  # points needed before standardising means anything
-app = health_app("detect-worker")
+app = health_app("detect-worker", lambda: {"kafka": ok(lambda: kafka.reachable(Settings()))})
 
 
 class Charts:

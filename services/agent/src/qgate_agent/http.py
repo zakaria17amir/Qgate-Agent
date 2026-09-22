@@ -16,7 +16,7 @@ from langgraph.types import Command
 from pydantic import BaseModel
 
 from qgate_agent.state import Bounds
-from qgate_core.health import health_app
+from qgate_core.health import Checks, health_app
 
 log = logging.getLogger("agent")
 
@@ -39,9 +39,11 @@ WORKERS = 4  # concurrent triages; the rest queue — a burst on the line must n
 
 
 def build_http(
-    graph: CompiledStateGraph[Any, Any, Any, Any], run_in_thread: bool = True
+    graph: CompiledStateGraph[Any, Any, Any, Any],
+    run_in_thread: bool = True,
+    ready: Checks | None = None,
 ) -> FastAPI:
-    app = health_app("agent")
+    app = health_app("agent", ready)
     pool = ThreadPoolExecutor(max_workers=WORKERS, thread_name_prefix="triage")
 
     def run(thread_id: str, payload: Any) -> None:

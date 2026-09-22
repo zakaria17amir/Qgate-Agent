@@ -10,7 +10,7 @@ import psycopg
 from fastapi import FastAPI, HTTPException, Query
 from psycopg_pool import ConnectionPool
 
-from qgate_core.health import health_app
+from qgate_core.health import health_app, ok
 from qgate_core.settings import Settings
 from qgate_core.sql import queries
 from qgate_detect.changepoint import detect_change
@@ -24,9 +24,14 @@ To = Annotated[datetime, Query()]
 
 
 def build_api(settings: Settings) -> FastAPI:
-    app = health_app("detect-api")
     # opened eagerly: compose starts detect only after the database is migrated and healthy
     pool = ConnectionPool(settings.database_url, min_size=1, max_size=4, open=True)
+
+    def db() -> None:
+        with pool.connection() as conn:
+            conn.execute("select 1")
+
+    app = health_app("detect-api", lambda: {"db": ok(db)})
 
     @app.get("/drift")
     def drift(station_id: str, characteristic_id: str, from_: From, to: To) -> dict[str, Any]:

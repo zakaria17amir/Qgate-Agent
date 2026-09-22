@@ -13,14 +13,14 @@ from confluent_kafka import Message, Producer
 from pydantic import BaseModel
 
 from qgate_core import kafka
-from qgate_core.health import health_app, serve
+from qgate_core.health import health_app, ok, serve
 from qgate_core.models import TOPIC, BuildEvent, EolResult, LineRecord, Measurement
 from qgate_core.settings import Settings
 from qgate_ingest.upsert import upsert
 
 log = logging.getLogger("ingest")
 MODELS: dict[str, type[BaseModel]] = {TOPIC[m]: m for m in (BuildEvent, Measurement, EolResult)}
-app = health_app("ingest")
+app = health_app("ingest", lambda: {"kafka": ok(lambda: kafka.reachable(Settings()))})
 
 
 def run(settings: Settings, group: str = "ingest", idle_timeout: float | None = None) -> None:

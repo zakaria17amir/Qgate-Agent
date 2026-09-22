@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field
 from qgate_api import store
 from qgate_core import kafka
 from qgate_core.auth import Principal, Role, mint, require
-from qgate_core.health import health_app, serve
+from qgate_core.health import health_app, ok, serve
 from qgate_core.models import ContainmentEvent, State
 from qgate_core.settings import Settings
 
@@ -38,13 +38,25 @@ class AgentClient(Protocol):
     """What the api needs from the agent: a way to resume a waiting thread."""
 
     def post(self, url: str, *, json: Any = None) -> Any: ...
+    def get(self, url: str) -> Any: ...
 
 
 def build_app(
     settings: ApiSettings, agent: AgentClient | None, producer: Producer | None
 ) -> FastAPI:
-    app = health_app("api")
     pool = ConnectionPool(settings.database_url, min_size=1, max_size=8, open=True)
+
+    def db() -> None:
+        with pool.connection() as conn:
+            conn.execute("select 1")
+
+    def ready() -> dict[str, bool]:
+        checks = {"db": ok(db)}
+        if agent is not None:
+            checks["agent"] = ok(lambda: agent.get("/health").raise_for_status())
+        return checks
+
+    app = health_app("api", ready)
     timeout = timedelta(seconds=settings.approval_timeout_s)
     viewer = require(Role.VIEWER, Role.APPROVER, Role.ADMIN, secret=settings.jwt_secret)
     approver = require(Role.APPROVER, Role.ADMIN, secret=settings.jwt_secret)

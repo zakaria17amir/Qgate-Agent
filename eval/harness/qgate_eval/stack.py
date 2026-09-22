@@ -37,6 +37,10 @@ class _LazyAgent:
         assert self.stack.agent is not None
         return self.stack.agent.post(url, json=json)
 
+    def get(self, url: str) -> Any:
+        assert self.stack.agent is not None
+        return self.stack.agent.get(url)
+
 
 class Stack:
     def __init__(self, pg_url: str, model: StructuredModel, mode: Mode, cassette_dir: Path) -> None:

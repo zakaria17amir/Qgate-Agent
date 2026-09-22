@@ -19,7 +19,7 @@ from qgate_agent.http import build_http
 from qgate_agent.llm import Ask, LangChainModel, Mode
 from qgate_agent.nodes import Deps
 from qgate_core.auth import Role, mint
-from qgate_core.health import serve
+from qgate_core.health import ok, serve
 from qgate_core.settings import Settings
 
 log = logging.getLogger("agent")
@@ -60,7 +60,21 @@ def main() -> None:
         fault_map=yaml.safe_load(s.fault_map_path.read_text(encoding="utf8")),
     )
     with saver(s.database_url_checkpoint_rw) as checkpointer:
-        graph = build_graph(Deps(**deps_kwargs), checkpointer)
-        app = build_http(graph)
+        deps = Deps(**deps_kwargs)
+        graph = build_graph(deps, checkpointer)
+
+        def db_ro() -> None:
+            with deps.ro.connection() as conn:
+                conn.execute("select 1")
+
+        def ready() -> dict[str, bool]:
+            return {
+                "db_ro": ok(db_ro),
+                "db_checkpoint": ok(lambda: checkpointer.get({"configurable": {"thread_id": "-"}})),
+                "detect": ok(lambda: deps.detect.get("/health", params={}).raise_for_status()),
+                "api": ok(lambda: deps.api.get("/health").raise_for_status()),
+            }
+
+        app = build_http(graph, ready=ready)
         threading.Thread(target=consumer.run, args=(s, app), daemon=True).start()
         serve(app)

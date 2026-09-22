@@ -41,6 +41,11 @@ def ensure_topics(settings: Settings) -> None:
                 raise
 
 
+def reachable(settings: Settings, timeout: float = 2.0) -> None:
+    """Raise unless a broker answers metadata within ``timeout`` — the readiness probe."""
+    AdminClient({"bootstrap.servers": settings.kafka_bootstrap}).list_topics(timeout=timeout)
+
+
 def producer(settings: Settings) -> Producer:
     return Producer(
         {"bootstrap.servers": settings.kafka_bootstrap, "enable.idempotence": True, "linger.ms": 20}

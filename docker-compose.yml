@@ -122,7 +122,7 @@ services:
       redpanda: { condition: service_healthy }
       roles: { condition: service_completed_successfully }
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8010/health')"]
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8010/ready')"]
       <<: *hc-http
 
   detect:
@@ -138,7 +138,7 @@ services:
     depends_on:
       roles: { condition: service_completed_successfully }
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8002/health')"]
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8002/ready')"]
       <<: *hc-http
 
   detect-worker:
@@ -156,7 +156,7 @@ services:
       redpanda: { condition: service_healthy }
       roles: { condition: service_completed_successfully }
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8012/health')"]
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8012/ready')"]
       <<: *hc-http
 
   agent:
@@ -179,7 +179,7 @@ services:
       detect: { condition: service_healthy }
       api: { condition: service_healthy }
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8001/health')"]
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8001/ready')"]
       <<: *hc-http
 
   api:
@@ -197,7 +197,7 @@ services:
       redpanda: { condition: service_healthy }
       roles: { condition: service_completed_successfully }
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/health')"]
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/ready')"]
       <<: *hc-http
 
   mock-mes:
