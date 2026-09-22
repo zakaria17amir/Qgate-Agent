@@ -1,0 +1,29 @@
+{
+ "inputs": {
+  "candidates": "- ST-27 ['CH-27-BEAD'] prior 0.7: Glass bonding: the characteristic is measured here\n- ST-03 ['CH-03-GAP'] prior 0.3: roof joint gap changes the glass bonding bead height",
+  "fault_codes": "F-27",
+  "oot_stations": "ST-27",
+  "vin": "SYN00000000000610"
+ },
+ "model": "claude-haiku-4-5",
+ "output": {
+  "ranked": [
+   {
+    "characteristic_id": "CH-27-BEAD",
+    "reasoning": "ST-27 had an out-of-tolerance measurement for the glass bonding bead characteristic (CH-27-BEAD) that directly produces fault F-27, making it the most likely source.",
+    "station_id": "ST-27"
+   },
+   {
+    "characteristic_id": "CH-03-GAP",
+    "reasoning": "ST-03 was not flagged as out-of-tolerance in the build record, so while roof joint gap can indirectly affect glass bonding bead height, there is no evidence supporting this as the fault source.",
+    "station_id": "ST-03"
+   }
+  ]
+ },
+ "prompt_id": "hypothesise",
+ "usage": {
+  "completion_tokens": 205,
+  "prompt_tokens": 947
+ },
+ "version": "1"
+}

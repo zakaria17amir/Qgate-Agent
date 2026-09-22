@@ -1,0 +1,22 @@
+{
+ "inputs": {
+  "evidence": "40 other vehicles with the same code; drift NONE (LOW); bench capable True",
+  "fault_codes": "F-24",
+  "kind": "LOT",
+  "scope": "lot L-24-0004",
+  "station_id": "ST-24",
+  "station_name": "Battery install",
+  "vin": "SYN00000000000324",
+  "vin_count": 250
+ },
+ "model": "claude-haiku-4-5",
+ "output": {
+  "text": "CONTAINMENT ORDER - LOT HOLD\n\nStation ST-24 (Battery install) is under LOT containment effective immediately. Hold all 250 vehicles in lot L-24-0004. Vehicle SYN00000000000324 failed end-of-line test with code F-24; 40 other vehicles show the same failure code, indicating a systemic issue at this station. Hold this lot because a repeating defect pattern has been detected that requires investigation and corrective action before release. Check battery connection torque and polarity verification first at ST-24. Do not release vehicles until root cause is confirmed and containment is lifted by Quality."
+ },
+ "prompt_id": "compose",
+ "usage": {
+  "completion_tokens": 172,
+  "prompt_tokens": 809
+ },
+ "version": "1"
+}

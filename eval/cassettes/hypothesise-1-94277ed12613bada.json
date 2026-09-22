@@ -1,0 +1,34 @@
+{
+ "inputs": {
+  "candidates": "- ST-24 ['CH-24-TORQUE', 'CH-24-VOLT'] prior 0.7: Battery install: the characteristic is measured here\n- ST-16 ['CH-16-RES'] prior 0.3: harness terminal fit affects clamp seating and voltage reading",
+  "fault_codes": "F-24",
+  "oot_stations": "ST-24",
+  "vin": "SYN00000000001100"
+ },
+ "model": "claude-haiku-4-5",
+ "output": {
+  "ranked": [
+   {
+    "characteristic_id": "CH-24-TORQUE",
+    "reasoning": "ST-24 is directly implicated by the build record showing out-of-tolerance measurements at this station, and the battery install torque characteristic is a primary source for fault code F-24.",
+    "station_id": "ST-24"
+   },
+   {
+    "characteristic_id": "CH-24-VOLT",
+    "reasoning": "ST-24 is directly implicated by the build record showing out-of-tolerance measurements at this station, and the voltage characteristic measured here can also produce fault code F-24.",
+    "station_id": "ST-24"
+   },
+   {
+    "characteristic_id": "CH-16-RES",
+    "reasoning": "ST-16 is less likely given no out-of-tolerance evidence at this station in the build record, though harness terminal fit could indirectly affect voltage readings.",
+    "station_id": "ST-16"
+   }
+  ]
+ },
+ "prompt_id": "hypothesise",
+ "usage": {
+  "completion_tokens": 268,
+  "prompt_tokens": 956
+ },
+ "version": "1"
+}

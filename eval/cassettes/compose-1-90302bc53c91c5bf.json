@@ -1,0 +1,22 @@
+{
+ "inputs": {
+  "evidence": "114 other vehicles with the same code; drift NONE (LOW); bench capable True",
+  "fault_codes": "F-24",
+  "kind": "LOT",
+  "scope": "lot L-24-0004",
+  "station_id": "ST-24",
+  "station_name": "Battery install",
+  "vin": "SYN00000000001100",
+  "vin_count": 250
+ },
+ "model": "claude-haiku-4-5",
+ "output": {
+  "text": "CONTAINMENT ORDER - LOT HOLD\n\nHold 250 vehicles from lot L-24-0004 at station ST-24 (Battery install). Vehicle SYN00000000001100 failed end-of-line test with fault code F-24; 114 other vehicles carry the same code, indicating a systemic defect in battery installation at this station. Hold all units pending root cause analysis and corrective action. First, verify battery connector seating and torque specifications on the last 20 units processed before the trigger vehicle. Document all findings and report to quality engineering immediately."
+ },
+ "prompt_id": "compose",
+ "usage": {
+  "completion_tokens": 158,
+  "prompt_tokens": 809
+ },
+ "version": "1"
+}

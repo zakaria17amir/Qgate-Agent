@@ -1,0 +1,29 @@
+{
+ "inputs": {
+  "candidates": "- ST-23 ['CH-23-TORQUE'] prior 0.7: Seat install: the characteristic is measured here\n- ST-17 ['CH-17-TORQUE', 'CH-17-GAP'] prior 0.3: cockpit position shifts the seat-rail datum",
+  "fault_codes": "F-23",
+  "oot_stations": "ST-23",
+  "vin": "SYN00000000000236"
+ },
+ "model": "claude-haiku-4-5",
+ "output": {
+  "ranked": [
+   {
+    "characteristic_id": "CH-23-TORQUE",
+    "reasoning": "ST-23 had an out-of-tolerance measurement in the build record and is the station where the seat install characteristic is directly measured, making it the most likely source of fault F-23.",
+    "station_id": "ST-23"
+   },
+   {
+    "characteristic_id": "CH-17-TORQUE",
+    "reasoning": "ST-17 had no out-of-tolerance measurements recorded in the build record, so while it can influence seat-rail datum through cockpit position shifts, the evidence does not support it as the fault source.",
+    "station_id": "ST-17"
+   }
+  ]
+ },
+ "prompt_id": "hypothesise",
+ "usage": {
+  "completion_tokens": 200,
+  "prompt_tokens": 955
+ },
+ "version": "1"
+}

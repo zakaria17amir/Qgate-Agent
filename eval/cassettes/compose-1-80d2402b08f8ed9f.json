@@ -1,0 +1,22 @@
+{
+ "inputs": {
+  "evidence": "1 other vehicles with the same code; drift STEP (MEDIUM); bench capable True",
+  "fault_codes": "F-18",
+  "kind": "WINDOW",
+  "scope": "2026-01-05 17:57 to 2026-01-05 18:14 UTC",
+  "station_id": "ST-18",
+  "station_name": "Brake fill",
+  "vin": "SYN00000000000705",
+  "vin_count": 17
+ },
+ "model": "claude-haiku-4-5",
+ "output": {
+  "text": "CONTAINMENT ORDER - WINDOW\n\nHold 17 vehicles from station ST-18 (Brake fill) produced between 2026-01-05 17:57 and 2026-01-05 18:14 UTC. Vehicle SYN00000000000705 failed end-of-line test with code F-18, and one additional vehicle exhibits the same failure code, indicating a potential process drift at medium severity. Immediately inspect the brake fill station equipment for calibration drift and verify all fill volumes and pressures against specification. Do not release any held vehicles until root cause is confirmed and corrective action is verified effective."
+ },
+ "prompt_id": "compose",
+ "usage": {
+  "completion_tokens": 168,
+  "prompt_tokens": 830
+ },
+ "version": "1"
+}

@@ -1,0 +1,22 @@
+{
+ "inputs": {
+  "evidence": "0 other vehicles with the same code; drift NONE (LOW); bench capable True",
+  "fault_codes": "F-17",
+  "kind": "SINGLE",
+  "scope": "this vehicle only",
+  "station_id": "ST-17",
+  "station_name": "Cockpit module",
+  "vin": "SYN00000000000132",
+  "vin_count": 1
+ },
+ "model": "claude-haiku-4-5",
+ "output": {
+  "text": "CONTAINMENT ORDER - SINGLE\n\nHold vehicle SYN00000000000132 at ST-17 (Cockpit module). This vehicle failed end-of-line test with F-17 and must not proceed to the next station. No other vehicles carry the same code; drift is LOW and the issue is bench capable. \n\nCheck the cockpit module assembly first at ST-17 for defects matching F-17 failure mode before any rework or release decision."
+ },
+ "prompt_id": "compose",
+ "usage": {
+  "completion_tokens": 134,
+  "prompt_tokens": 807
+ },
+ "version": "1"
+}

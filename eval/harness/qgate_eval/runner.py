@@ -69,17 +69,18 @@ def run_golden(stack: Stack, g: Golden, on_log: Callable[[str], None] = log.info
 
     row = stack.api.get(f"/containments/{cid}", headers=stack.human()).json()
     held = set(row["vins"]) if row["state"] == "COMMITTED" else set()
+    audit = next(
+        a
+        for a in stack.api.get("/audit", headers=stack.human()).json()
+        if a["containment_id"] == cid
+    )
+    proposed = set(audit["proposed"].get("vins", []))
     decided = (
         "ESCALATE"
         if row["kind"] == "NONE" and row["vin_count"] == 0 and snap["outcome"] == "ESCALATED"
         else "NONE"
         if row["kind"] == "NONE"
         else row["kind"]
-    )
-    audit = next(
-        a
-        for a in stack.api.get("/audit", headers=stack.human()).json()
-        if a["containment_id"] == cid
     )
     return CaseResult(
         golden_id=g.id,
@@ -88,7 +89,9 @@ def run_golden(stack: Stack, g: Golden, on_log: Callable[[str], None] = log.info
         decided=decided,
         affected=_affected(g, run),
         held=held,
+        proposed=proposed,
         approved_unamended=approved_unamended,
+        rejected_by_human=row["state"] == "REJECTED",
         abstained=row["kind"] == "NONE",
         latency_total_ms=audit["latency_total_ms"] or 0,
         latency_llm_ms=audit["latency_llm_ms"] or 0,

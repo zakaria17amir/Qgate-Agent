@@ -1,0 +1,29 @@
+{
+ "inputs": {
+  "candidates": "- ST-06 ['CH-06-GAP'] prior 0.7: Hood fit: the characteristic is measured here\n- ST-09 ['CH-09-GEOM'] prior 0.3: body geometry drift shows first as hood gap",
+  "fault_codes": "F-06",
+  "oot_stations": "ST-06",
+  "vin": "SYN00000000000180"
+ },
+ "model": "claude-haiku-4-5",
+ "output": {
+  "ranked": [
+   {
+    "characteristic_id": "CH-06-GAP",
+    "reasoning": "ST-06 is the direct measurement point for hood fit (CH-06-GAP) and the vehicle's build record shows an out-of-tolerance measurement at this station, providing direct evidence of the fault origin.",
+    "station_id": "ST-06"
+   },
+   {
+    "characteristic_id": "CH-09-GEOM",
+    "reasoning": "ST-09 (body geometry drift) is less likely since the build record shows no out-of-tolerance measurement at this station, and the direct measurement station ST-06 already has evidence of the fault.",
+    "station_id": "ST-09"
+   }
+  ]
+ },
+ "prompt_id": "hypothesise",
+ "usage": {
+  "completion_tokens": 204,
+  "prompt_tokens": 943
+ },
+ "version": "1"
+}

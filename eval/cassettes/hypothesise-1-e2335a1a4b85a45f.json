@@ -1,0 +1,29 @@
+{
+ "inputs": {
+  "candidates": "- ST-03 ['CH-03-GAP'] prior 0.7: Roof join: the characteristic is measured here\n- ST-02 ['CH-02-WELD'] prior 0.3: side-frame misweld opens the roof joint",
+  "fault_codes": "F-03",
+  "oot_stations": "ST-03",
+  "vin": "SYN00000000000013"
+ },
+ "model": "claude-haiku-4-5",
+ "output": {
+  "ranked": [
+   {
+    "characteristic_id": "CH-03-GAP",
+    "reasoning": "ST-03 had an out-of-tolerance measurement for the roof join gap characteristic, directly matching the fault code F-03 and providing direct evidence of the defect.",
+    "station_id": "ST-03"
+   },
+   {
+    "characteristic_id": "CH-02-WELD",
+    "reasoning": "ST-02 had no out-of-tolerance measurements recorded, so there is no evidence supporting the hypothesis that a side-frame misweld caused the roof joint opening.",
+    "station_id": "ST-02"
+   }
+  ]
+ },
+ "prompt_id": "hypothesise",
+ "usage": {
+  "completion_tokens": 187,
+  "prompt_tokens": 946
+ },
+ "version": "1"
+}

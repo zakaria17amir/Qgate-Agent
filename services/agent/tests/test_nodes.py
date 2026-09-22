@@ -23,7 +23,7 @@ def drift(verdict: str, severity: str = "HIGH", onset: datetime | None = T0) -> 
     )
 
 
-def bench(capable: bool) -> BenchResult:
+def bench(capable: bool, method: str = "grr+bias-vs-peers") -> BenchResult:
     return BenchResult(
         bench_id="EOL-B2",
         capable=capable,
@@ -31,15 +31,19 @@ def bench(capable: bool) -> BenchResult:
         bias_vs_peers=0.9 if not capable else 0.0,
         n_repeats=10,
         n_values=300,
-        method="grr+bias-vs-peers",
+        method=method,
     )
 
 
-def siblings(vins: list[str], lots: dict[str, int] | None = None) -> CorrelationResult:
+def siblings(
+    vins: list[str], lots: dict[str, int] | None = None, spread_takts: int = 200
+) -> CorrelationResult:
+    """Siblings ``spread_takts`` apart: contiguous (1) is a run in time, wide looks like a lot."""
     return CorrelationResult(
         fault_code="F-19",
         station_id="ST-19",
         vins=vins,
+        entered_at=[T0 + timedelta(seconds=60 * spread_takts * i) for i in range(len(vins))],
         by_shift={"S1": len(vins)},
         by_lot=lots or {},
     )
@@ -56,11 +60,19 @@ def test_route_bench_incapable_goes_to_bench_alert() -> None:
     assert nodes.route(s) == "bench_alert"
 
 
-def test_route_strong_drift_without_siblings_escalates() -> None:
-    s = state(drift=drift("STEP", "HIGH"), bench=bench(True), siblings=siblings([]))
+def test_route_detected_change_without_siblings_escalates_whatever_its_size() -> None:
+    s = state(drift=drift("STEP", "MEDIUM"), bench=bench(True), siblings=siblings([]))
     assert nodes.route(s) == "escalate"
     s = state(drift=drift("DRIFT", "HIGH"), bench=bench(True), siblings=siblings(["one"]))
     assert nodes.route(s) == "escalate"  # one earlier defect is noise, not a run
+
+
+def test_route_unknown_bench_is_not_a_bad_bench() -> None:
+    """Too few readings to judge the gauge must not silence the triage."""
+    s = state(
+        drift=drift("NONE"), bench=bench(False, method="insufficient-data"), siblings=siblings([])
+    )
+    assert nodes.route(s) == "bound"
 
 
 def test_route_otherwise_bounds() -> None:
@@ -82,6 +94,20 @@ def test_bound_prefers_lot_when_siblings_concentrate_in_one() -> None:
         vins_in_window=lambda st, a, z: [],
     )
     assert b.kind == "LOT" and b.lot_ids == ["L-24-0004"] and "SYN1" in b.vins
+
+
+def test_contiguous_siblings_sharing_a_lot_block_are_a_window_not_a_lot() -> None:
+    """drift-06: three consecutive failures always share a lot block; that is time, not the lot."""
+    onset = T0 + timedelta(hours=10)
+    s = state(
+        drift=drift("DRIFT", onset=onset),
+        siblings=siblings(["a", "b", "c"], {"L-19-0003": 3}, spread_takts=1),
+        hypotheses=[Hypothesis(station_id="ST-19", characteristic_id="CH-19-TORQUE", reasoning="")],
+    )
+    b = nodes.decide_bounds(
+        s, vins_by_lot=lambda st, lot: ["x"] * 250, vins_in_window=lambda st, a, z: ["a", "b", "c"]
+    )
+    assert b.kind == "WINDOW"
 
 
 def test_bound_uses_drift_onset_for_a_window() -> None:

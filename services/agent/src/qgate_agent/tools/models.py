@@ -71,6 +71,7 @@ class CorrelationResult(BaseModel):
     fault_code: str
     station_id: str
     vins: list[str]
+    entered_at: list[datetime] = Field(default_factory=list)  # when each sibling passed the station
     by_shift: dict[str, int] = Field(default_factory=dict)
     by_lot: dict[str, int] = Field(default_factory=dict)
 
@@ -85,6 +86,13 @@ class CorrelationResult(BaseModel):
     @property
     def top_lot_share(self) -> float:
         return self.by_lot[self.top_lot] / self.n if self.top_lot and self.n else 0.0
+
+    def spread_takts(self, takt_s: int = 60) -> int:
+        """Build-time span of the siblings in takts: consecutive vehicles share a lot block by
+        construction, so lot evidence needs siblings spread wider than one block."""
+        if len(self.entered_at) < 2:
+            return 0
+        return int((max(self.entered_at) - min(self.entered_at)).total_seconds() // takt_s)
 
 
 class DriftResult(BaseModel):

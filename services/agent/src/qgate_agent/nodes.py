@@ -41,6 +41,7 @@ from qgate_core.pricing import Usage, cost_usd
 NO_PATTERN = 1  # up to one earlier defect with the same code is noise, not a run (Gate 2)
 LOT_SHARE = 0.8  # siblings this concentrated in one lot make it a lot problem
 LOT_MIN = 3
+LOT_SPREAD_TAKTS = 60  # siblings must span more than a lot block (25 vehicles) to implicate the lot
 LOOKBACK = timedelta(days=3)  # how far back correlation and drift look from the trigger
 PROMPT_VERSION = "1"
 
@@ -67,11 +68,11 @@ class Deps:
 
 def route(s: TriageState) -> str:
     """After drift_check: bench_alert | escalate | bound."""
-    if not s["bench"].capable:
+    b = s["bench"]
+    if not b.capable and b.method != "insufficient-data":  # unknown is not the same as bad
         return "bench_alert"
-    d = s["drift"]
-    if d.verdict in ("DRIFT", "STEP") and d.severity == "HIGH" and s["siblings"].n <= NO_PATTERN:
-        return "escalate"  # the gauge says something is wrong, the line says nobody else failed
+    if s["drift"].verdict in ("DRIFT", "STEP") and s["siblings"].n <= NO_PATTERN:
+        return "escalate"  # the gauge says something changed, the line says nobody else failed
     return "bound"
 
 
@@ -91,12 +92,14 @@ def decide_bounds(
     """Turn evidence into a concrete hold: by lot, by window, or the single vehicle."""
     station = s["hypotheses"][0].station_id
     sib, drift = s["siblings"], s["drift"]
-    if sib.n >= LOT_MIN and sib.top_lot and sib.top_lot_share >= LOT_SHARE:
-        vins = vins_by_lot(station, sib.top_lot)
+    lot = sib.top_lot
+    lot_like = sib.n >= LOT_MIN and lot is not None and sib.top_lot_share >= LOT_SHARE
+    if lot is not None and lot_like and sib.spread_takts() > LOT_SPREAD_TAKTS:
+        vins = vins_by_lot(station, lot)
         return Bounds(
             kind="LOT",
             station_id=station,
-            lot_ids=[sib.top_lot],
+            lot_ids=[lot],
             vins=_with(vins, s["vin"]),
             confidence=round(0.5 + 0.5 * sib.top_lot_share, 2),
         )

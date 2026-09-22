@@ -1,0 +1,29 @@
+{
+ "inputs": {
+  "candidates": "- ST-30 ['CH-30-HEADLAMP', 'CH-30-EMISS', 'CH-30-NOISE'] prior 0.7: End-of-line test: the characteristic is measured here\n- ST-29 ['CH-29-TOE'] prior 0.3: wheel alignment error presents as headlamp aim at EOL",
+  "fault_codes": "F-30",
+  "oot_stations": "ST-30",
+  "vin": "SYN00000000000004"
+ },
+ "model": "claude-haiku-4-5",
+ "output": {
+  "ranked": [
+   {
+    "characteristic_id": "CH-30-HEADLAMP",
+    "reasoning": "ST-30 had out-of-tolerance measurements in the build record and is where the headlamp characteristic is directly measured at end-of-line test.",
+    "station_id": "ST-30"
+   },
+   {
+    "characteristic_id": "CH-29-TOE",
+    "reasoning": "ST-29 is a secondary candidate per the fault map, but the build record shows no out-of-tolerance measurements at this station, making it less likely than ST-30.",
+    "station_id": "ST-29"
+   }
+  ]
+ },
+ "prompt_id": "hypothesise",
+ "usage": {
+  "completion_tokens": 187,
+  "prompt_tokens": 971
+ },
+ "version": "1"
+}

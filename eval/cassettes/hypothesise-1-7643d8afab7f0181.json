@@ -1,0 +1,29 @@
+{
+ "inputs": {
+  "candidates": "- ST-17 ['CH-17-TORQUE', 'CH-17-GAP'] prior 0.7: Cockpit module: the characteristic is measured here\n- ST-09 ['CH-09-GEOM'] prior 0.3: body geometry error shows as cockpit gap",
+  "fault_codes": "F-17",
+  "oot_stations": "ST-17",
+  "vin": "SYN00000000000132"
+ },
+ "model": "claude-haiku-4-5",
+ "output": {
+  "ranked": [
+   {
+    "characteristic_id": "CH-17-TORQUE",
+    "reasoning": "ST-17 had out-of-tolerance measurements in the build record and directly measures the cockpit module characteristics that produce fault F-17.",
+    "station_id": "ST-17"
+   },
+   {
+    "characteristic_id": "CH-09-GEOM",
+    "reasoning": "ST-09 is a secondary candidate as body geometry errors can manifest as cockpit gap issues, but no out-of-tolerance evidence was recorded at this station.",
+    "station_id": "ST-09"
+   }
+  ]
+ },
+ "prompt_id": "hypothesise",
+ "usage": {
+  "completion_tokens": 179,
+  "prompt_tokens": 955
+ },
+ "version": "1"
+}

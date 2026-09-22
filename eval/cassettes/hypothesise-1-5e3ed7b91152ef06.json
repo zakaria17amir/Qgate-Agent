@@ -1,0 +1,39 @@
+{
+ "inputs": {
+  "candidates": "- ST-19 ['CH-19-TORQUE'] prior 0.7: Steering column: the characteristic is measured here\n- ST-17 ['CH-17-TORQUE', 'CH-17-GAP'] prior 0.3: cockpit module seating sets the column bracket position\n- ST-24 ['CH-24-TORQUE', 'CH-24-VOLT'] prior 0.7: Battery install: the characteristic is measured here\n- ST-16 ['CH-16-RES'] prior 0.3: harness terminal fit affects clamp seating and voltage reading",
+  "fault_codes": "F-19, F-24",
+  "oot_stations": "ST-19, ST-24",
+  "vin": "SYN00000000001100"
+ },
+ "model": "claude-haiku-4-5",
+ "output": {
+  "ranked": [
+   {
+    "characteristic_id": "CH-19-TORQUE",
+    "reasoning": "ST-19 directly produced fault F-19 and had an out-of-tolerance measurement in the build record, making it the most likely source.",
+    "station_id": "ST-19"
+   },
+   {
+    "characteristic_id": "CH-24-TORQUE",
+    "reasoning": "ST-24 directly produced fault F-24 and had an out-of-tolerance measurement in the build record, making it the second most likely source.",
+    "station_id": "ST-24"
+   },
+   {
+    "characteristic_id": "CH-17-TORQUE",
+    "reasoning": "ST-17 can produce the faults but had no out-of-tolerance measurements in the build record, so it is less likely than the stations with evidence.",
+    "station_id": "ST-17"
+   },
+   {
+    "characteristic_id": "CH-16-RES",
+    "reasoning": "ST-16 can produce the faults but had no out-of-tolerance measurements in the build record, so it is the least likely candidate.",
+    "station_id": "ST-16"
+   }
+  ]
+ },
+ "prompt_id": "hypothesise",
+ "usage": {
+  "completion_tokens": 324,
+  "prompt_tokens": 1034
+ },
+ "version": "1"
+}

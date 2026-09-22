@@ -1,0 +1,29 @@
+{
+ "inputs": {
+  "candidates": "- ST-18 ['CH-18-PRESSURE'] prior 0.7: Brake fill: the characteristic is measured here\n- ST-16 ['CH-16-RES'] prior 0.3: harness routing can foul the brake line during fill",
+  "fault_codes": "F-18",
+  "oot_stations": "ST-18",
+  "vin": "SYN00000000000701"
+ },
+ "model": "claude-haiku-4-5",
+ "output": {
+  "ranked": [
+   {
+    "characteristic_id": "CH-18-PRESSURE",
+    "reasoning": "ST-18 had an out-of-tolerance measurement on the brake pressure characteristic that is directly measured at this station, making it the most likely source of fault F-18.",
+    "station_id": "ST-18"
+   },
+   {
+    "characteristic_id": "CH-16-RES",
+    "reasoning": "ST-16 is less likely since there is no evidence of out-of-tolerance measurements at this station, despite the possibility that harness routing could foul the brake line.",
+    "station_id": "ST-16"
+   }
+  ]
+ },
+ "prompt_id": "hypothesise",
+ "usage": {
+  "completion_tokens": 187,
+  "prompt_tokens": 946
+ },
+ "version": "1"
+}

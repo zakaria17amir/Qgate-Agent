@@ -14,7 +14,7 @@ public api endpoint a shift leader would use (ADR-003: no bypass exists).
 | Term | Definition |
 |---|---|
 | **affected** | Vehicles the correct containment should hold *at trigger time*: the scenario's injected defectives (`truth.by_inject`) built up to and including the trigger, plus the trigger itself for `SINGLE`. Empty for `NONE` and `ESCALATE`. Base-rate random defects elsewhere on the line are not "affected" — no containment of this station could reach them. |
-| **held** | Vehicles in the containment as committed to the plant system (after any amendment). Empty when the agent abstained or the human rejected. |
+| **held** | Vehicles in the containment as committed to the plant system (after any amendment). Empty when the agent abstained or the human rejected. When the golden's human **rejects**, escapes and recall are computed on what the agent *proposed*: the rejection is the human's decision and the agent is judged on its offer. |
 | **escapes** | `|affected − held|` — affected vehicles that would leave the plant. |
 | **precision** | `|affected ∩ held| / |held|`; 1.0 when both are empty. |
 | **recall** | `|affected ∩ held| / |affected|`; 1.0 when both are empty. |

@@ -23,6 +23,10 @@ class CaseResult:
     latency_total_ms: int
     latency_llm_ms: int
     cost_usd: float | None
+    proposed: set[str] | None = None  # what the agent offered at the gate
+    rejected_by_human: bool = (
+        False  # the human said no: the agent's proposal is judged, not the hold
+    )
 
 
 @dataclass(frozen=True)
@@ -36,11 +40,14 @@ class Score:
 
 
 def score(c: CaseResult) -> Score:
-    hit = len(c.affected & c.held)
+    # a human rejection is a human decision; escapes and recall would otherwise charge it to the
+    # agent, so the proposal (what was *offered*) stands in for what was held
+    held = c.proposed if c.rejected_by_human and c.proposed is not None else c.held
+    hit = len(c.affected & held)
     return Score(
         case=c,
-        escapes=len(c.affected - c.held),
-        precision=hit / len(c.held) if c.held else (1.0 if not c.affected else 0.0),
+        escapes=len(c.affected - held),
+        precision=hit / len(held) if held else (1.0 if not c.affected else 0.0),
         recall=hit / len(c.affected) if c.affected else 1.0,
         decision_match=c.decided == c.expected
         or (c.expected == "MULTI" and c.decided == "LOT"),  # see docs/eval.md
