@@ -20,14 +20,13 @@ from qgate_eval.golden import Golden
 from qgate_eval.runner import load_case
 
 ROOT = Path(__file__).parents[2]
-pytestmark = pytest.mark.chaos
 
 if os.environ.get("CHAOS") != "1":
     pytest.skip("set CHAOS=1 with a `make chaos` stack running", allow_module_level=True)
 
 ENV = {k: (v or "").split("#")[0].strip() for k, v in dotenv_values(ROOT / ".env").items()}
-PG_URL = (
-    f"postgres://postgres:{ENV['POSTGRES_PASSWORD']}@localhost:"
+PG_URL = (  # the migrate role: the suite loads a golden's run into the stack's fact tables
+    f"postgres://qgate_migrate:{ENV['POSTGRES_PASSWORD']}@localhost:"
     f"{ENV.get('POSTGRES_HOST_PORT') or 5432}/qgate"
 )
 
@@ -52,10 +51,18 @@ def toxiproxy() -> httpx.Client:
     return httpx.Client(base_url="http://localhost:8474")
 
 
-def compose(*args: str) -> None:
-    subprocess.run(
-        ["docker", "compose", "--profile", "core", "--profile", "chaos", *args], check=True
-    )
+@pytest.fixture(scope="session")
+def pg_url() -> str:
+    return PG_URL
+
+
+@pytest.fixture(scope="session")
+def compose() -> Callable[..., None]:
+    def run(*args: str) -> None:
+        cmd = ["docker", "compose", "--profile", "core", "--profile", "chaos", *args]
+        subprocess.run(cmd, check=True)
+
+    return run
 
 
 def wait_for(pred: Callable[[], bool], timeout_s: float, every_s: float = 1.0) -> None:
@@ -67,20 +74,32 @@ def wait_for(pred: Callable[[], bool], timeout_s: float, every_s: float = 1.0) -
         time.sleep(every_s)
 
 
-def triage_to_gate(api: httpx.Client, golden_id: str) -> dict[str, Any]:
+@pytest.fixture(scope="session")
+def wait() -> Callable[..., None]:
+    return wait_for
+
+
+@pytest.fixture
+def triage_to_gate(api: httpx.Client) -> Callable[[str], dict[str, Any]]:
     """Load a golden into the stack's database, trigger it, return the PROPOSED row."""
-    g = Golden.load(ROOT / "eval" / "goldens" / f"{golden_id}.yaml")
-    load_case(PG_URL, g)
-    api.post("/triage", json={"vin": g.trigger.vin, "fault_codes": g.trigger.fault_codes})
-    rows: list[dict[str, Any]] = []
 
-    def proposed() -> bool:
-        rows[:] = [
-            r
-            for r in api.get("/containments", params={"state": "PROPOSED"}).json()
-            if r["reason"] and r["state"] == "PROPOSED"
-        ]
-        return bool(rows)
+    def go(golden_id: str) -> dict[str, Any]:
+        g = Golden.load(ROOT / "eval" / "goldens" / f"{golden_id}.yaml")
+        load_case(PG_URL, g)
+        tid = api.post(
+            "/triage", json={"vin": g.trigger.vin, "fault_codes": g.trigger.fault_codes}
+        ).json()["thread_id"]
+        rows: list[dict[str, Any]] = []
 
-    wait_for(proposed, timeout_s=60)
-    return rows[0]
+        def proposed() -> bool:
+            rows[:] = [
+                r
+                for r in api.get("/containments", params={"state": "PROPOSED"}).json()
+                if r["thread_id"] == tid
+            ]
+            return bool(rows)
+
+        wait_for(proposed, timeout_s=60)
+        return rows[0]
+
+    return go

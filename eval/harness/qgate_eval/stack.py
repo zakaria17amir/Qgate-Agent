@@ -7,6 +7,7 @@ separate containers; this wiring exists so `replay` needs neither compose nor Ka
 from pathlib import Path
 from typing import Any
 
+import httpx
 import yaml
 from fastapi.testclient import TestClient
 from psycopg_pool import ConnectionPool
@@ -34,12 +35,9 @@ class _LazyAgent:
         self.stack = stack
 
     def post(self, url: str, *, json: Any = None) -> Any:
-        assert self.stack.agent is not None
+        if self.stack.agent is None:  # what a dead agent looks like from the api
+            raise httpx.ConnectError("agent is down")
         return self.stack.agent.post(url, json=json)
-
-    def get(self, url: str) -> Any:
-        assert self.stack.agent is not None
-        return self.stack.agent.get(url)
 
 
 class Stack:

@@ -270,3 +270,56 @@ def test_outage_mid_commit_parks_then_commits_when_swept(stack: Stack) -> None:
     final = stack.api.get(f"/containments/{cid}", headers=stack.human()).json()
     assert final["state"] == "COMMITTED"
     assert stack.mes.get("/_stats").json()["holds"] == before + 1
+
+
+def test_approval_while_agent_is_down_is_kept_and_committed_when_swept(stack: Stack) -> None:
+    """The human's decision is never lost to a dead agent: the api records it, answers 200, and
+    its sweeper wakes the thread once the agent is back."""
+    g = load_golden(stack, "drift-09")
+    _, snap = triage(stack, g)
+    cid = snap["containment_id"]
+    before = stack.mes.get("/_stats").json()["holds"]
+
+    stack.agent = None  # the process is gone
+    r = stack.api.post(f"/containments/{cid}/approve", json={}, headers=stack.human())
+    assert r.status_code == 200 and r.json()["state"] == "APPROVED"
+
+    stack.start_agent()
+    stack.sweep()
+    final = stack.api.get(f"/containments/{cid}", headers=stack.human()).json()
+    assert final["state"] == "COMMITTED" and final["mes_ref"]
+    assert stack.mes.get("/_stats").json()["holds"] == before + 1
+
+
+def test_crash_between_gate_and_commit_is_resumed_by_the_sweeper(
+    stack: Stack, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The decision was consumed, then the process died before the plant write: the thread is
+    neither waiting nor running. A fresh agent continues it from the checkpoint; one hold."""
+    from qgate_agent.tools import mes
+
+    g = load_golden(stack, "drift-10")
+    tid, snap = triage(stack, g)
+    cid = snap["containment_id"]
+    before = stack.mes.get("/_stats").json()["holds"]
+
+    def die(*a: Any, **k: Any) -> None:
+        raise RuntimeError("simulated crash in commit")
+
+    monkeypatch.setattr(mes, "post_hold", die)
+    monkeypatch.setattr("qgate_agent.nodes.post_hold", die)
+    stack.api.post(f"/containments/{cid}/approve", json={}, headers=stack.human())
+    assert stack.agent is not None
+    assert stack.agent.get(f"/threads/{tid}").json()["status"] == "RUNNING"  # stalled, in truth
+    monkeypatch.undo()
+
+    stack.start_agent()  # a new process: nothing in flight
+    stack.sweep()
+    final = stack.api.get(f"/containments/{cid}", headers=stack.human()).json()
+    assert final["state"] == "COMMITTED"
+    assert stack.mes.get("/_stats").json()["holds"] == before + 1
+    with psycopg.connect(stack.pg_url) as conn:
+        n = conn.execute(
+            "select count(*) from qgate.containment where thread_id = %s", (uuid.UUID(tid),)
+        ).fetchone()
+    assert n == (1,)

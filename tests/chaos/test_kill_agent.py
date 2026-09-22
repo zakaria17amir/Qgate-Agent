@@ -5,6 +5,9 @@ from typing import Any
 
 import httpx
 import psycopg
+import pytest
+
+pytestmark = pytest.mark.chaos
 
 
 def test_agent_restart_mid_gate_loses_nothing(

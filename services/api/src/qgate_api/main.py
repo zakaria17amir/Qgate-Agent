@@ -40,7 +40,6 @@ class AgentClient(Protocol):
     """What the api needs from the agent: a way to resume a waiting thread."""
 
     def post(self, url: str, *, json: Any = None) -> Any: ...
-    def get(self, url: str) -> Any: ...
 
 
 def build_app(
@@ -53,10 +52,8 @@ def build_app(
             conn.execute("select 1")
 
     def ready() -> dict[str, bool]:
-        checks = {"db": ok(db)}
-        if agent is not None:
-            checks["agent"] = ok(lambda: agent.get("/health").raise_for_status())
-        return checks
+        # db only: the agent depends on the api being ready, so the api must not wait for the agent
+        return {"db": ok(db)}
 
     app = health_app("api", ready)
     app.add_middleware(
@@ -165,6 +162,37 @@ def build_app(
         with pool.connection() as conn:
             return store.audit(conn)
 
+    def resume(row: dict[str, Any], body: dict[str, Any]) -> None:
+        """Wake the thread. Never raises: the decision is already in Postgres, and the sweeper
+        re-sends it until the agent takes it; 409 means a worker already has it."""
+        if agent is None:
+            return
+        try:
+            r = agent.post(f"/threads/{row['thread_id']}/resume", json=_jsonable(body))
+        except httpx.HTTPError as e:
+            log.warning(
+                "agent unreachable; %s will be re-sent by the sweeper: %s", row["thread_id"], e
+            )
+            return
+        if r.status_code == 409:
+            log.info("thread %s not waiting; skipped", row["thread_id"])
+        elif r.status_code >= 300:
+            log.error("resume of %s failed: %s %s", row["thread_id"], r.status_code, r.text)
+
+    def human_resume(row: dict[str, Any], action: str, actor: str, reason: str | None) -> None:
+        bounds = {
+            k: row[k] for k in ("kind", "station_id", "window_start", "window_end", "lot_ids")
+        }
+        resume(
+            row,
+            {
+                "decision": action,
+                "actor": actor,
+                "reason": reason,
+                "bounds": {**bounds, "vins": row["vins"]},
+            },
+        )
+
     def decide(cid: uuid.UUID, d: store.Decision) -> dict[str, Any]:
         """Shared by approve/amend/reject: persist, announce, wake the waiting thread."""
         with pool.connection() as conn:
@@ -172,19 +200,7 @@ def build_app(
         if row is None:
             raise HTTPException(409, "containment is not awaiting a decision")
         announce(row, d.actor)
-        if agent is not None:
-            bounds = {
-                k: row[k] for k in ("kind", "station_id", "window_start", "window_end", "lot_ids")
-            }
-            resume = {
-                "decision": d.action,
-                "actor": d.actor,
-                "reason": d.reason,
-                "bounds": {**bounds, "vins": row["vins"]},
-            }
-            r = agent.post(f"/threads/{row['thread_id']}/resume", json=_jsonable(resume))
-            if r.status_code >= 300:
-                log.error("resume failed for %s: %s %s", cid, r.status_code, r.text)
+        human_resume(row, d.action, d.actor, d.reason)
         return row
 
     class Reason(store.Decision):
@@ -212,17 +228,9 @@ def build_app(
     ) -> dict[str, Any]:
         return decide(cid, store.Decision(action="REJECT", actor=p.sub, reason=body.reason))
 
-    def resume(row: dict[str, Any], body: dict[str, Any]) -> None:
-        if agent is None:
-            return
-        r = agent.post(f"/threads/{row['thread_id']}/resume", json=body)
-        if r.status_code == 409:  # a worker is already on it (or it just finished); not an error
-            log.info("thread %s not waiting; skipped", row["thread_id"])
-        elif r.status_code >= 300:
-            log.error("resume of %s failed: %s %s", row["thread_id"], r.status_code, r.text)
-
     def sweep() -> None:
-        """One pass: expire stale proposals; ask the agent to retry parked commits."""
+        """One pass: expire stale proposals; re-send decisions the agent has not acted on
+        (it was down, or died between the gate and the plant write); retry parked commits."""
         with pool.connection() as conn:
             for cid in store.sweep_expired(conn, datetime.now(UTC)):
                 row = store.get(conn, cid)
@@ -230,7 +238,15 @@ def build_app(
                     announce(row, "system")
                     # the graph must learn the gate closed
                     resume(row, {"decision": "REJECT", "actor": "system", "reason": "expired"})
+            decided = [  # with VIN lists: an AMEND re-scoped the row; the agent takes it as is
+                full
+                for r in store.list_by_state(conn, "APPROVED,AMENDED,REJECTED")
+                if (full := store.get(conn, r["containment_id"])) is not None
+            ]
             parked = store.list_by_state(conn, "COMMIT_PENDING")
+        for row in decided:
+            action = {"APPROVED": "APPROVE", "AMENDED": "AMEND"}.get(row["state"], "REJECT")
+            human_resume(row, action, row["decided_by"] or "system", None)
         for row in parked:
             resume(row, {"decision": "RETRY", "actor": "system", "reason": "sweeper"})
 

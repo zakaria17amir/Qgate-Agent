@@ -88,3 +88,22 @@ def test_ingest_can_write_facts_and_agent_can_read_them(
         with psycopg.connect(pg_url) as conn:
             conn.execute("delete from qgate.dim_shift where shift_id = 'S9'")
             conn.commit()
+
+
+def test_api_can_rescope_a_containment_as_its_own_role(role_url: Callable[[str], str]) -> None:
+    """Amending replaces the held VIN set: the api role needs delete on containment_vin."""
+    with psycopg.connect(role_url("api_rw")) as conn:
+        conn.execute(
+            "insert into qgate.containment (containment_id, thread_id, state, kind, reason, "
+            "idempotency_key) values ('00000000-0000-0000-0000-00000000c0de', gen_random_uuid(), "
+            "'PROPOSED', 'WINDOW', 'x', '00000000-0000-0000-0000-00000000c0de')"
+        )
+        conn.execute(
+            "insert into qgate.containment_vin "
+            "values ('00000000-0000-0000-0000-00000000c0de', 'V1')"
+        )
+        conn.execute(
+            "delete from qgate.containment_vin "
+            "where containment_id = '00000000-0000-0000-0000-00000000c0de'"
+        )
+        conn.rollback()  # privileges were the question; leave nothing behind

@@ -4,6 +4,9 @@ from collections.abc import Callable
 from typing import Any
 
 import httpx
+import pytest
+
+pytestmark = pytest.mark.chaos
 
 
 def test_outage_mid_commit_yields_exactly_one_hold(

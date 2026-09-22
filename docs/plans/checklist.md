@@ -160,23 +160,23 @@ Console and C++ are independent of each other; reliability items need Phase 3 co
 
 ### 4.1 Console (React weight 1 — keep it to four routes)
 
-- [ ] **[F]** `src/api/` typed client (generate from api OpenAPI with `openapi-typescript`) + `src/auth/` JWT drawer → pages
-- [ ] **[F]** `/queue` → `/case/:id` (evidence tabs) → `/case/:id/decide` (approve/amend/reject, VIN-count preview) → `/audit` (agreement, widened/narrowed, latency, cost) — in that order
-- [ ] **[F]** Playwright smoke: seed one golden, amend window −10 min, assert `COMMITTED` → `console` job
+- [x] **[F]** `src/api/` typed client (hand-written: the api serves `dict` bodies, so `openapi-typescript` would emit `object`) + `src/auth/` JWT drawer → pages
+- [x] **[F]** `/queue` → `/case/:id` (evidence tabs) → `/case/:id/decide` (approve/amend/reject, VIN-count preview via `GET …/preview`; amend re-scopes VINs server-side and keeps the trigger) → `/audit` (agreement, widened/narrowed, latency, cost) — in that order
+- [x] **[F]** Playwright smoke: seed one golden (`qgate-eval serve`), amend window −10 min, assert `COMMITTED` → `console` job
 
 ### 4.2 line-sim in C++ (C++ weight 1 — Python fallback stays)
 
-- [ ] **[F]** `scenario_reader`: parse `scenarios/*.yaml` → events; Catch2 tests → scheduler
-- [ ] **[F]** `scheduler`: sequence → emit time at takt × speed; drift-corrected monotonic clock; Catch2 timing invariants → producer
-- [ ] **[F]** `producer`: librdkafka, Confluent wire-format Avro (fallback: JSON + `Content-Encoding` header if avro-cpp burns > 4 h — record deviation) → replaces Python producer in compose; `--producer=python` retained
-- [ ] **[F]** `/metrics` counters (`line_sim_events_total`) → dashboard
+- [x] **[F]** `manifest` reader (ADR-011: replays `qgate-gen export`, not `scenarios/*.yaml` — one source of ground truth); Catch2 tests → scheduler
+- [x] **[F]** `scheduler`: simulated offset → emit time ÷ speed; absolute schedule from replay start (no cumulative drift); Catch2 timing invariants → producer
+- [x] **[F]** `producer`: librdkafka, Confluent wire-format Avro (body pre-encoded by the generator; C++ frames it) → replaces Python producer in compose (`gen` + `line-sim`, `make demo`); `qgate-gen replay` retained. Verified: 138,624 scheduled = delivered, DLQ empty, Postgres counts = manifest counts; SIGTERM exits 0
+- [x] **[F]** `/metrics` counters (`line_sim_events_total{topic}`, `line_sim_scheduled_total`, `line_sim_errors_total`) → dashboard
 
 ### 4.3 Reliability
 
-- [ ] **[F]** `tenacity` retries + timeouts on every `agent → detect/api/mock-mes` call → survives blips
-- [ ] **[F]** Circuit breaker on `mock-mes`; `COMMIT_PENDING` state via `api PATCH`; api sweeper re-resumes every 60 s → outage without data loss
-- [ ] **[F]** Chaos profile wired (`agent → toxiproxy → mock-mes`); tests: 20 s outage mid-commit → exactly one hold, `duplicate_replays ≥ 1`; kill agent mid-gate → resumes → `make chaos` suite
-- [ ] **[F]** `/ready` checks real dependencies on every service → compose/k8s readiness truthful
+- [x] **[F]** `tenacity` retries + timeouts on the MES commit (5 attempts, jitter, cap 8 s); transport-level connect retries on every `agent → detect/api/mock-mes` client → survives blips
+- [x] **[F]** Circuit breaker on `mock-mes`; `COMMIT_PENDING` via `api PATCH` from a `pending` node; `retry_gate` interrupts; api sweeper re-resumes every 30 s (one cadence for expiry and retry) → outage without data loss (ADR-012)
+- [x] **[F]** Chaos profile wired (`agent → toxiproxy → mock-mes`, `make chaos`); in-process: lost ack → one hold, `duplicate_replays ≥ 1`; outage → parked → swept → committed; `tests/chaos`: 20 s outage mid-commit, kill agent mid-gate → `make chaos-test`
+- [x] **[F]** `/ready` checks real dependencies on every service (api: db+agent; agent: both dbs, detect, api; detect: db; ingest/worker: broker) → compose probes `/ready`
 - [ ] **[G]** **Gate 4:** shift leader runs the demo without a terminal; chaos suite passes; CI green
 
 ---

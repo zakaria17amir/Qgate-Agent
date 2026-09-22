@@ -1,5 +1,6 @@
 # qgate-agent — one file, five profiles.
-#   core   : the product (line-sim, ingest, detect, agent, api, mock-mes, console) + Redpanda, Postgres
+#   core   : the product (ingest, detect, agent, api, mock-mes, console) + Redpanda, Postgres
+#   demo   : gen + line-sim — export a scenario and replay it at takt (`make demo`)
 #   obs    : Prometheus, Grafana, Langfuse
 #   eval   : Prefect server + worker (pipelines)
 #   chaos  : toxiproxy between agent and mock-mes
@@ -96,7 +97,7 @@ services:
     <<: *python-common
     build: { context: ., dockerfile: docker/python.Dockerfile, args: { PACKAGE: qgate-generator, ENTRYPOINT: qgate-gen } }
     image: ghcr.io/zakaria17amir/qgate-gen:dev
-    profiles: [core]
+    profiles: [demo]
     restart: "no"
     command: ["export", "--scenario", "${SCENARIO:-tool_wear}", "--out", "/data/${SCENARIO:-tool_wear}.jsonl"]
     volumes:
@@ -109,7 +110,7 @@ services:
   line-sim:
     build: { context: ., dockerfile: services/line-sim/Dockerfile }
     image: ghcr.io/zakaria17amir/qgate-line-sim:dev
-    profiles: [core]
+    profiles: [demo]
     command:
       - --file
       - /data/${SCENARIO:-tool_wear}.jsonl

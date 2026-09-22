@@ -14,3 +14,5 @@ One page per decision. Never edited after acceptance; a changed decision is a ne
 | [008](0008-api-owns-containment-state.md) | `api` owns containment state; agent is read-only on Postgres | Accepted |
 | [009](0009-detect-two-processes.md) | Two `detect` processes from one image | Accepted |
 | [010](0010-dbmate-sql-migrations.md) | dbmate SQL migrations over an ORM | Accepted |
+| [011](0011-cpp-replays-exported-stream.md) | The C++ line-sim replays a stream the Python generator exported | Accepted |
+| [012](0012-commit-retry-loop-and-breaker.md) | Commit retry loop and breaker: approvals survive a plant-system outage | Accepted |

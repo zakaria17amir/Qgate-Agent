@@ -7,6 +7,7 @@ CORE           := --profile core
 OBS            := --profile obs
 EVAL           := --profile eval
 CHAOS          := --profile chaos
+DEMO           := --profile demo
 
 .PHONY: help up up-infra up-all down logs ps demo chaos chaos-test \
         install lint fmt typecheck unit contract integration eval-replay eval-live scan build console-e2e \
@@ -17,7 +18,7 @@ help: ## list targets
 
 # --- stack -------------------------------------------------------------------
 
-up: ## start core services (line-sim, ingest, detect, agent, api, mock-mes, console + infra)
+up: ## start core services (ingest, detect, agent, api, mock-mes, console + infra); `make demo` replays a line
 	$(COMPOSE) $(CORE) up -d --build
 
 up-infra: ## infra only: redpanda, postgres, migrations
@@ -27,7 +28,7 @@ up-all: ## core + observability + prefect
 	$(COMPOSE) $(CORE) $(OBS) $(EVAL) up -d --build
 
 down: ## stop everything and drop volumes
-	$(COMPOSE) $(CORE) $(OBS) $(EVAL) $(CHAOS) down -v --remove-orphans
+	$(COMPOSE) $(CORE) $(OBS) $(EVAL) $(CHAOS) $(DEMO) down -v --remove-orphans
 
 logs: ## tail all logs
 	$(COMPOSE) $(CORE) logs -f --tail=200
@@ -36,10 +37,10 @@ ps: ## container status
 	$(COMPOSE) $(CORE) $(OBS) $(EVAL) ps
 
 demo: ## export a scenario and replay it with the C++ line-sim: make demo SCENARIO=tool_wear SPEED=10
-	$(COMPOSE) $(CORE) build gen line-sim
+	$(COMPOSE) $(CORE) $(DEMO) build gen line-sim
 	$(COMPOSE) $(CORE) up -d --wait ingest
-	SCENARIO=$(or $(SCENARIO),tool_wear) $(COMPOSE) $(CORE) run --rm --no-deps gen
-	SCENARIO=$(or $(SCENARIO),tool_wear) REPLAY_SPEED=$(or $(SPEED),10) $(COMPOSE) $(CORE) run --rm --no-deps --service-ports line-sim
+	SCENARIO=$(or $(SCENARIO),tool_wear) $(COMPOSE) $(CORE) $(DEMO) run --rm --no-deps gen
+	SCENARIO=$(or $(SCENARIO),tool_wear) REPLAY_SPEED=$(or $(SPEED),10) $(COMPOSE) $(CORE) $(DEMO) run --rm --no-deps --service-ports line-sim
 	@echo "console: http://localhost:8080   api docs: http://localhost:8000/docs"
 
 chaos: ## start core + toxiproxy with agent->mock-mes routed through the proxy

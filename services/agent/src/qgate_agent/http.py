@@ -45,12 +45,16 @@ def build_http(
 ) -> FastAPI:
     app = health_app("agent", ready)
     pool = ThreadPoolExecutor(max_workers=WORKERS, thread_name_prefix="triage")
+    running: set[str] = set()  # threads this process is driving right now
 
     def run(thread_id: str, payload: Any) -> None:
+        running.add(thread_id)
         try:
             graph.invoke(payload, config={"configurable": {"thread_id": thread_id}})
         except Exception:  # the thread state is checkpointed; the failure is visible via GET
             log.exception("triage %s failed", thread_id)
+        finally:
+            running.discard(thread_id)
 
     def start(thread_id: str, payload: Any) -> None:
         if run_in_thread:
@@ -101,9 +105,15 @@ def build_http(
         snap = graph.get_state({"configurable": {"thread_id": thread_id}})
         if not snap.values:
             raise HTTPException(404, "unknown thread")
-        if not (snap.tasks and any(t.interrupts for t in snap.tasks)):
-            raise HTTPException(409, "thread is not waiting at the gate")
-        start(thread_id, Command(resume=req.model_dump(mode="json")))
+        if snap.tasks and any(t.interrupts for t in snap.tasks):
+            start(thread_id, Command(resume=req.model_dump(mode="json")))
+        elif snap.next and thread_id not in running:
+            # checkpointed mid-run and nobody is driving it: the process that was died between
+            # nodes. Continue from the checkpoint; the decision it carried was already consumed.
+            log.warning("thread %s stalled at %s; continuing", thread_id, list(snap.next))
+            start(thread_id, None)
+        else:
+            raise HTTPException(409, "thread is not waiting")
         return {"thread_id": thread_id}
 
     return app
