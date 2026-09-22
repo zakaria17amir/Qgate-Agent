@@ -12,5 +12,5 @@ One page per decision. Never edited after acceptance; a changed decision is a ne
 | [006](0006-provider-agnostic-llm-cassettes.md) | Provider-agnostic LLM with cassette record/replay | Accepted |
 | 007 | Event-driven trigger, HTTP resume | Phase 3 |
 | 008 | `api` owns containment state; agent is read-only on Postgres | Phase 3 |
-| 009 | Two `detect` processes from one image | Phase 2 |
+| [009](0009-detect-two-processes.md) | Two `detect` processes from one image | Accepted |
 | [010](0010-dbmate-sql-migrations.md) | dbmate SQL migrations over an ORM | Accepted |

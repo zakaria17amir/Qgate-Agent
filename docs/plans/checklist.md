@@ -98,17 +98,17 @@ Order matters: station ids come from `line.yaml`; everything else references the
 
 ## Phase 2 — Detect and deterministic tools (no LLM)
 
-- [ ] **[F]** `qgate_detect/spc.py`: Western Electric rules 1–4, EWMA λ=0.2, unit-tested on synthetic series → worker
-- [ ] **[F]** `qgate_detect/changepoint.py`: PELT (`ruptures`, rbf, BIC penalty) + CUSUM cross-check → `estimated_onset`; deterministic test on `tool_wear` and `shift_step` ground truth (onset within ±15 takts) → `/drift`, `bound`
-- [ ] **[F]** `qgate_detect/msa.py`: `%GRR` from `repeat_no > 1`, bias, `capable = grr < 30`; test: `bench_drift` → incapable, `clean_baseline` → capable → `/bench/{id}/capability`; `docs/metrology.md` with formula + assumption label
-- [ ] **[F]** `detect api`: `/drift`, `/bench/{id}/capability`, `/stations/{id}/alerts` over `DETECT_RO` → agent tool `check_station_drift`
-- [ ] **[F]** `detect worker`: consumer on `line.measurements`, ring buffers rebuilt from Postgres on start, emits `quality.alerts` keyed by station → dashboard, console alerts tab
-- [ ] **[F]** ADR-009 two processes from one image
-- [ ] **[F]** `db/queries/{station,correlate,window}.sql` + tests against fixture DB (each under budget) → tools
-- [ ] **[F]** `qgate_agent/tools/`: `get_vehicle_genealogy`, `get_station_spec`, `find_correlated_failures`, `check_station_drift`, `estimate_containment_window` as plain typed functions on `AGENT_RO` + `DETECT_BASE_URL`; no LangGraph yet → graph nodes
-- [ ] **[F]** `qgate_mock_mes`: server validated against `openapi.yaml` (idempotent `POST /v1/holds`, 409 on conflicting body, API key, `/_chaos`, `/_stats`) → `commit` node; **needs** nothing else — can be built in parallel with detect
-- [ ] **[F]** Contract tests: `schemathesis` against `mock-mes` OpenAPI → `make contract`
-- [ ] **[G]** **Gate 2:** `pytest -m eval_tools` — for every golden, tools alone return the correct siblings, onset (± tolerance) and bench verdict, with no model in the loop; CI green
+- [x] **[F]** `qgate_detect/spc.py`: Western Electric rules 1–4, EWMA λ=0.2, unit-tested on synthetic series → worker
+- [x] **[F]** `qgate_detect/changepoint.py`: PELT (`ruptures`, rbf, BIC penalty) + CUSUM cross-check → `estimated_onset`; deterministic test on `tool_wear` and `shift_step` ground truth (onset within ±15 takts) → `/drift`, `bound`
+- [x] **[F]** `qgate_detect/msa.py`: `%GRR` from `repeat_no > 1`, bias, `capable = grr < 30`; test: `bench_drift` → incapable, `clean_baseline` → capable → `/bench/{id}/capability`; `docs/metrology.md` with formula + assumption label
+- [x] **[F]** `detect api`: `/drift`, `/bench/{id}/capability`, `/stations/{id}/alerts` over `DETECT_RO` → agent tool `check_station_drift`
+- [x] **[F]** `detect worker`: consumer on `line.measurements`, ring buffers rebuilt from Postgres on start, emits `quality.alerts` keyed by station → dashboard, console alerts tab
+- [x] **[F]** ADR-009 two processes from one image
+- [x] **[F]** `db/queries/{station,correlate,window}.sql` + tests against fixture DB (each under budget) → tools
+- [x] **[F]** `qgate_agent/tools/`: `get_vehicle_genealogy`, `get_station_spec`, `find_correlated_failures`, `check_station_drift`, `estimate_containment_window` as plain typed functions on `AGENT_RO` + `DETECT_BASE_URL`; no LangGraph yet → graph nodes
+- [x] **[F]** `qgate_mock_mes`: server validated against `openapi.yaml` (idempotent `POST /v1/holds`, 409 on conflicting body, API key, `/_chaos`, `/_stats`) → `commit` node; **needs** nothing else — can be built in parallel with detect
+- [x] **[F]** Contract tests: `schemathesis` against `mock-mes` OpenAPI → `make contract`
+- [x] **[G]** **Gate 2:** `pytest -m eval_tools` — for every golden, tools alone return the correct siblings, onset (± tolerance) and bench verdict, with no model in the loop; CI green
 
 ---
 
