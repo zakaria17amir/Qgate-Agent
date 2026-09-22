@@ -5,6 +5,7 @@ so the request returns at once; state lives in the checkpointer, not in this pro
 """
 
 import logging
+import threading
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -45,22 +46,29 @@ def build_http(
 ) -> FastAPI:
     app = health_app("agent", ready)
     pool = ThreadPoolExecutor(max_workers=WORKERS, thread_name_prefix="triage")
-    running: set[str] = set()  # threads this process is driving right now
+    running: set[str] = set()  # threads this process is driving (or has queued) right now
+    claim = threading.Lock()
 
     def run(thread_id: str, payload: Any) -> None:
-        running.add(thread_id)
         try:
             graph.invoke(payload, config={"configurable": {"thread_id": thread_id}})
         except Exception:  # the thread state is checkpointed; the failure is visible via GET
             log.exception("triage %s failed", thread_id)
         finally:
-            running.discard(thread_id)
+            with claim:
+                running.discard(thread_id)
 
-    def start(thread_id: str, payload: Any) -> None:
+    def start(thread_id: str, payload: Any) -> bool:
+        """Claim the thread and drive it; False if this process already is (no double drive)."""
+        with claim:
+            if thread_id in running:
+                return False
+            running.add(thread_id)
         if run_in_thread:
             pool.submit(run, thread_id, payload)
         else:
             run(thread_id, payload)
+        return True
 
     @app.post("/triage", status_code=202)
     def triage(req: TriageRequest) -> dict[str, str]:
@@ -106,13 +114,16 @@ def build_http(
         if not snap.values:
             raise HTTPException(404, "unknown thread")
         if snap.tasks and any(t.interrupts for t in snap.tasks):
-            start(thread_id, Command(resume=req.model_dump(mode="json")))
-        elif snap.next and thread_id not in running:
-            # checkpointed mid-run and nobody is driving it: the process that was died between
-            # nodes. Continue from the checkpoint; the decision it carried was already consumed.
-            log.warning("thread %s stalled at %s; continuing", thread_id, list(snap.next))
-            start(thread_id, None)
+            taken = start(thread_id, Command(resume=req.model_dump(mode="json")))
+        elif snap.next:
+            # checkpointed mid-run: if nobody here is driving it, its process died between nodes.
+            # Continue from the checkpoint; the decision it carried was already consumed.
+            taken = start(thread_id, None)
+            if taken:
+                log.warning("thread %s stalled at %s; continuing", thread_id, list(snap.next))
         else:
+            taken = False
+        if not taken:
             raise HTTPException(409, "thread is not waiting")
         return {"thread_id": thread_id}
 

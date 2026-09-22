@@ -317,8 +317,7 @@ def make_nodes(deps: Deps) -> dict[str, Callable[[TriageState], dict[str, Any]]]
     def pending(s: TriageState) -> dict[str, Any]:
         """Tell the api the approved containment is parked; its sweeper will ask us to retry."""
         deps.api.patch(
-            f"/internal/containments/{s['containment_id']}",
-            json={"state": "COMMIT_PENDING", "reason": s["errors"][-1]},
+            f"/internal/containments/{s['containment_id']}", json={"state": "COMMIT_PENDING"}
         ).raise_for_status()
         return {}
 

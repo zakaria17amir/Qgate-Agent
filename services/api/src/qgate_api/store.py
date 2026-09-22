@@ -166,6 +166,18 @@ def list_by_state(conn: psycopg.Connection, state: str | None) -> list[dict[str,
         ).fetchall()
 
 
+def list_unreported(conn: psycopg.Connection) -> list[dict[str, Any]]:
+    """Decided by a human but never closed by the agent's report (it was down, or died between the
+    gate and the plant write). The sweeper re-sends these decisions until the agent takes them."""
+    with conn.cursor(row_factory=dict_row) as cur:
+        return cur.execute(
+            "select c.* from qgate.containment c "
+            "join qgate.containment_audit a using (containment_id) "
+            "where c.state in ('APPROVED', 'AMENDED', 'REJECTED') and a.latency_total_ms is null "
+            "order by c.decided_at"
+        ).fetchall()
+
+
 def audit(conn: psycopg.Connection) -> list[dict[str, Any]]:
     with conn.cursor(row_factory=dict_row) as cur:
         return cur.execute(

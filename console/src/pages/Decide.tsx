@@ -204,7 +204,7 @@ export function Decide() {
             {action === "REJECT"
               ? 0
               : action === "AMEND"
-                ? preview.data?.vin_count ?? "…"
+                ? (preview.data?.vin_count ?? "…")
                 : c.vin_count}
           </div>
           <div className="muted">was {c.vin_count}</div>

@@ -240,7 +240,7 @@ def build_app(
                     resume(row, {"decision": "REJECT", "actor": "system", "reason": "expired"})
             decided = [  # with VIN lists: an AMEND re-scoped the row; the agent takes it as is
                 full
-                for r in store.list_by_state(conn, "APPROVED,AMENDED,REJECTED")
+                for r in store.list_unreported(conn)
                 if (full := store.get(conn, r["containment_id"])) is not None
             ]
             parked = store.list_by_state(conn, "COMMIT_PENDING")
