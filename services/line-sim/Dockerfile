@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1.7
 # Multi-stage: toolchain → build → (test | distroless runtime). Context is the repo root.
-# Dependencies come from Debian; Phase 4 adds librdkafka-dev, nlohmann-json3-dev, libyaml-cpp-dev here.
+# Dependencies come from Debian (no vcpkg): Catch2 v2, nlohmann-json, librdkafka, cpp-httplib.
 FROM debian:bookworm-slim AS build
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential cmake ninja-build catch2 \
+        build-essential cmake ninja-build catch2 nlohmann-json3-dev librdkafka-dev libcpp-httplib-dev \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 COPY services/line-sim .

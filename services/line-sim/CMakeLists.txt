@@ -9,7 +9,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(LINE_SIM_BUILD_TESTS "Build Catch2 tests" ON)
 
 # Core library: everything except main(), so tests link against it.
-add_library(line_sim_core src/scheduler.cpp)
+add_library(line_sim_core src/scheduler.cpp src/manifest.cpp)
 target_include_directories(line_sim_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_compile_options(line_sim_core PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
@@ -19,7 +19,7 @@ target_link_libraries(line-sim PRIVATE line_sim_core)
 if(LINE_SIM_BUILD_TESTS)
     enable_testing()
     find_package(Catch2 2 CONFIG REQUIRED)   # Debian bookworm ships Catch2 2.13
-    add_executable(line_sim_tests tests/test_scheduler.cpp)
+    add_executable(line_sim_tests tests/test_scheduler.cpp tests/test_manifest.cpp tests/test_wire.cpp)
     target_link_libraries(line_sim_tests PRIVATE line_sim_core Catch2::Catch2)
     include(Catch)
     catch_discover_tests(line_sim_tests)
