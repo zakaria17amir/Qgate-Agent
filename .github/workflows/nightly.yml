@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 90
     permissions: { contents: write }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.1.0
         with: { version: "0.12.17" }
       - run: cp .env.example .env
@@ -24,7 +24,7 @@ jobs:
           LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
           LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
       - run: docker compose --profile eval run --rm prefect-worker prefect deployment run 'nightly-eval/nightly-eval' --watch
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: nightly-report
           path: |
