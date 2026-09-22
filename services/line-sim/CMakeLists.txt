@@ -13,8 +13,14 @@ add_library(line_sim_core src/scheduler.cpp src/manifest.cpp)
 target_include_directories(line_sim_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_compile_options(line_sim_core PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(RDKAFKA REQUIRED IMPORTED_TARGET rdkafka)
+pkg_check_modules(HTTPLIB REQUIRED IMPORTED_TARGET cpp-httplib)   # Debian builds it as a .so
+find_package(Threads REQUIRED)
+
 add_executable(line-sim src/main.cpp)
-target_link_libraries(line-sim PRIVATE line_sim_core)
+target_compile_options(line-sim PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_link_libraries(line-sim PRIVATE line_sim_core PkgConfig::RDKAFKA PkgConfig::HTTPLIB Threads::Threads)
 
 if(LINE_SIM_BUILD_TESTS)
     enable_testing()

@@ -12,7 +12,9 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 FROM python:${PYTHON}-slim-bookworm AS runtime
 ARG ENTRYPOINT
-RUN groupadd -g 10001 app && useradd -u 10001 -g app -M -s /usr/sbin/nologin app
+# /data pre-owned by app: a fresh named volume mounted there inherits the ownership (gen writes manifests)
+RUN groupadd -g 10001 app && useradd -u 10001 -g app -M -s /usr/sbin/nologin app \
+    && mkdir /data && chown app:app /data
 COPY --from=build /opt/venv /opt/venv
 COPY --from=build /workspace/db/queries /workspace/db/queries
 COPY --from=build /workspace/services/mock-mes/openapi.yaml /workspace/openapi.yaml

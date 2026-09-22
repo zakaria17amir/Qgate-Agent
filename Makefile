@@ -35,8 +35,11 @@ logs: ## tail all logs
 ps: ## container status
 	$(COMPOSE) $(CORE) $(OBS) $(EVAL) ps
 
-demo: ## replay the tool-wear scenario at 10x and open the console
-	$(COMPOSE) $(CORE) run --rm -e SCENARIO=tool_wear -e REPLAY_SPEED=10 line-sim
+demo: ## export a scenario and replay it with the C++ line-sim: make demo SCENARIO=tool_wear SPEED=10
+	$(COMPOSE) $(CORE) build gen line-sim
+	$(COMPOSE) $(CORE) up -d --wait ingest
+	SCENARIO=$(or $(SCENARIO),tool_wear) $(COMPOSE) $(CORE) run --rm --no-deps gen
+	SCENARIO=$(or $(SCENARIO),tool_wear) REPLAY_SPEED=$(or $(SPEED),10) $(COMPOSE) $(CORE) run --rm --no-deps --service-ports line-sim
 	@echo "console: http://localhost:8080   api docs: http://localhost:8000/docs"
 
 chaos: ## start core + toxiproxy with agent->mock-mes routed through the proxy

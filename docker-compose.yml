@@ -91,17 +91,45 @@ services:
       migrate: { condition: service_completed_successfully }
 
   # ---------------------------------------------------------------- product services
+  # `make demo`: gen writes the scenario manifest into sim-data, line-sim replays it at takt (ADR-011)
+  gen:
+    <<: *python-common
+    build: { context: ., dockerfile: docker/python.Dockerfile, args: { PACKAGE: qgate-generator, ENTRYPOINT: qgate-gen } }
+    image: ghcr.io/zakaria17amir/qgate-gen:dev
+    profiles: [core]
+    restart: "no"
+    command: ["export", "--scenario", "${SCENARIO:-tool_wear}", "--out", "/data/${SCENARIO:-tool_wear}.jsonl"]
+    volumes:
+      - ./scenarios:/scenarios:ro
+      - ./schemas:/schemas:ro
+      - sim-data:/data
+    depends_on:
+      roles: { condition: service_completed_successfully }
+
   line-sim:
     build: { context: ., dockerfile: services/line-sim/Dockerfile }
     image: ghcr.io/zakaria17amir/qgate-line-sim:dev
     profiles: [core]
-    env_file: .env
+    command:
+      - --file
+      - /data/${SCENARIO:-tool_wear}.jsonl
+      - --brokers
+      - ${KAFKA_BOOTSTRAP:-redpanda:9092}
+      - --registry
+      - ${SCHEMA_REGISTRY_URL:-http://redpanda:8081}
+      - --schemas
+      - /schemas
+      - --speed
+      - ${REPLAY_SPEED:-10}
+    ports: ["8020:8010"]   # /metrics
+    read_only: true
     volumes:
-      - ./scenarios:/scenarios:ro
       - ./schemas:/schemas:ro
+      - sim-data:/data:ro
     depends_on:
       redpanda: { condition: service_healthy }
-      roles: { condition: service_completed_successfully }
+      ingest: { condition: service_healthy }   # ingest creates the topics with their partition counts
+      gen: { condition: service_completed_successfully }
 
   line-sim-test:
     build: { context: ., dockerfile: services/line-sim/Dockerfile, target: test }
@@ -311,3 +339,4 @@ volumes:
   prometheus-data:
   langfuse-data:
   ollama-data:
+  sim-data:
