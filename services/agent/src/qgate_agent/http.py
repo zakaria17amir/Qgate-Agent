@@ -17,6 +17,7 @@ from langgraph.types import Command
 from pydantic import BaseModel
 
 from qgate_agent.state import Bounds
+from qgate_core import metrics
 from qgate_core.health import Checks, health_app
 
 log = logging.getLogger("agent")
@@ -53,6 +54,7 @@ def build_http(
         try:
             graph.invoke(payload, config={"configurable": {"thread_id": thread_id}})
         except Exception:  # the thread state is checkpointed; the failure is visible via GET
+            metrics.TRIAGE_OUTCOMES.labels(outcome="FAILED").inc()
             log.exception("triage %s failed", thread_id)
         finally:
             with claim:

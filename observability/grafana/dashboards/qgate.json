@@ -1,0 +1,636 @@
+{
+ "uid": "qgate",
+ "title": "qgate-agent \u2014 line to decision",
+ "tags": [
+  "qgate"
+ ],
+ "timezone": "browser",
+ "schemaVersion": 39,
+ "version": 1,
+ "editable": false,
+ "refresh": "10s",
+ "time": {
+  "from": "now-1h",
+  "to": "now"
+ },
+ "templating": {
+  "list": [
+   {
+    "name": "DS",
+    "type": "datasource",
+    "query": "prometheus",
+    "current": {
+     "text": "Prometheus",
+     "value": "Prometheus"
+    },
+    "hide": 2
+   }
+  ]
+ },
+ "panels": [
+  {
+   "type": "timeseries",
+   "title": "Ingest throughput (records/s)",
+   "gridPos": {
+    "x": 0,
+    "y": 0,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "targets": [
+    {
+     "expr": "sum by (topic) (rate(ingest_records_total{result=\"ok\"}[1m]))",
+     "legendFormat": "{{topic}}",
+     "refId": "A"
+    },
+    {
+     "expr": "sum(rate(ingest_records_total{result=\"dlq\"}[1m]))",
+     "legendFormat": "dlq",
+     "refId": "B"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "reqps"
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   },
+   "id": 1
+  },
+  {
+   "type": "timeseries",
+   "title": "Consumer lag (kafka_consumer_lag)",
+   "gridPos": {
+    "x": 12,
+    "y": 0,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "targets": [
+    {
+     "expr": "sum by (group, topic) (kafka_consumer_lag)",
+     "legendFormat": "{{group}} {{topic}}",
+     "refId": "A"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   },
+   "id": 2
+  },
+  {
+   "type": "timeseries",
+   "title": "Triage latency p50 / p95 / p99 by phase",
+   "gridPos": {
+    "x": 0,
+    "y": 8,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "targets": [
+    {
+     "expr": "histogram_quantile(0.50, sum by (le, phase) (rate(triage_duration_seconds_bucket[5m])))",
+     "legendFormat": "p50 {{phase}}",
+     "refId": "A"
+    },
+    {
+     "expr": "histogram_quantile(0.95, sum by (le, phase) (rate(triage_duration_seconds_bucket[5m])))",
+     "legendFormat": "p95 {{phase}}",
+     "refId": "B"
+    },
+    {
+     "expr": "histogram_quantile(0.99, sum by (le, phase) (rate(triage_duration_seconds_bucket[5m])))",
+     "legendFormat": "p99 {{phase}}",
+     "refId": "C"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s"
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   },
+   "id": 3
+  },
+  {
+   "type": "stat",
+   "title": "Gate: proposals waiting",
+   "gridPos": {
+    "x": 12,
+    "y": 8,
+    "w": 6,
+    "h": 4
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "targets": [
+    {
+     "expr": "gate_pending",
+     "legendFormat": "waiting",
+     "refId": "A"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "options": {
+    "colorMode": "value",
+    "graphMode": "area",
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    }
+   },
+   "id": 4
+  },
+  {
+   "type": "timeseries",
+   "title": "Gate: decision time p50 / p95",
+   "gridPos": {
+    "x": 18,
+    "y": 8,
+    "w": 6,
+    "h": 4
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "targets": [
+    {
+     "expr": "histogram_quantile(0.50, sum by (le) (rate(gate_decision_seconds_bucket[1h])))",
+     "legendFormat": "p50",
+     "refId": "A"
+    },
+    {
+     "expr": "histogram_quantile(0.95, sum by (le) (rate(gate_decision_seconds_bucket[1h])))",
+     "legendFormat": "p95",
+     "refId": "B"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s"
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   },
+   "id": 5
+  },
+  {
+   "type": "piechart",
+   "title": "Gate: decisions",
+   "gridPos": {
+    "x": 12,
+    "y": 12,
+    "w": 12,
+    "h": 4
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "targets": [
+    {
+     "expr": "sum by (decision) (increase(gate_decisions_total[1h]))",
+     "legendFormat": "{{decision}}",
+     "refId": "A"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "legend": {
+     "displayMode": "list",
+     "placement": "right"
+    }
+   },
+   "id": 6
+  },
+  {
+   "type": "timeseries",
+   "title": "Triage outcomes (per hour)",
+   "gridPos": {
+    "x": 0,
+    "y": 16,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "targets": [
+    {
+     "expr": "sum by (outcome) (increase(triage_outcomes_total[1h]))",
+     "legendFormat": "{{outcome}}",
+     "refId": "A"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   },
+   "id": 7
+  },
+  {
+   "type": "timeseries",
+   "title": "Model cost per triage (USD, price table is an assumption)",
+   "gridPos": {
+    "x": 12,
+    "y": 16,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "targets": [
+    {
+     "expr": "increase(llm_cost_usd_total[1h]) / clamp_min(sum(increase(triage_outcomes_total[1h])), 1)",
+     "legendFormat": "per triage",
+     "refId": "A"
+    },
+    {
+     "expr": "sum by (kind) (rate(llm_tokens_total[5m]))",
+     "legendFormat": "tokens/s {{kind}}",
+     "refId": "B"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "currencyUSD"
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byRegexp",
+       "options": "tokens.*"
+      },
+      "properties": [
+       {
+        "id": "unit",
+        "value": "short"
+       },
+       {
+        "id": "custom.axisPlacement",
+        "value": "right"
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   },
+   "id": 8
+  },
+  {
+   "type": "timeseries",
+   "title": "Plant system (MES): requests by status",
+   "gridPos": {
+    "x": 0,
+    "y": 24,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "targets": [
+    {
+     "expr": "sum by (status) (rate(mes_requests_total[5m]))",
+     "legendFormat": "{{status}}",
+     "refId": "A"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "reqps"
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   },
+   "id": 9
+  },
+  {
+   "type": "state-timeline",
+   "title": "MES breaker state",
+   "gridPos": {
+    "x": 12,
+    "y": 24,
+    "w": 6,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "targets": [
+    {
+     "expr": "max by (state) (mes_breaker_state == 1)",
+     "legendFormat": "{{state}}",
+     "refId": "A"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {
+    "showValue": "never",
+    "mergeValues": true
+   },
+   "id": 10
+  },
+  {
+   "type": "timeseries",
+   "title": "Error rate: dlq share, MES 5xx share, failed triages",
+   "gridPos": {
+    "x": 18,
+    "y": 24,
+    "w": 6,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "targets": [
+    {
+     "expr": "sum(rate(ingest_records_total{result=\"dlq\"}[5m])) / clamp_min(sum(rate(ingest_records_total[5m])), 0.001)",
+     "legendFormat": "ingest dlq share",
+     "refId": "A"
+    },
+    {
+     "expr": "sum(rate(mes_requests_total{status=~\"5..|error\"}[5m])) / clamp_min(sum(rate(mes_requests_total[5m])), 0.001)",
+     "legendFormat": "MES failure share",
+     "refId": "B"
+    },
+    {
+     "expr": "sum(rate(triage_outcomes_total{outcome=\"FAILED\"}[5m]))",
+     "legendFormat": "failed triages/s",
+     "refId": "C"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percentunit"
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   },
+   "id": 11
+  },
+  {
+   "type": "timeseries",
+   "title": "SLO: non-LLM triage p95 < 30 s (burn = share of triages over budget, 1h)",
+   "gridPos": {
+    "x": 0,
+    "y": 32,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "targets": [
+    {
+     "expr": "1 - (sum(rate(triage_duration_seconds_bucket{phase=\"non_llm\", le=\"30.0\"}[1h])) / clamp_min(sum(rate(triage_duration_seconds_count{phase=\"non_llm\"}[1h])), 0.001))",
+     "legendFormat": "share over 30 s",
+     "refId": "A"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percentunit",
+     "min": 0,
+     "max": 1
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   },
+   "id": 12
+  },
+  {
+   "type": "timeseries",
+   "title": "SLO: gate durability \u2014 decisions that reached an outcome (1h)",
+   "gridPos": {
+    "x": 12,
+    "y": 32,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "targets": [
+    {
+     "expr": "sum(increase(triage_outcomes_total{outcome=~\"COMMITTED|REJECTED\"}[1h])) / clamp_min(sum(increase(gate_decisions_total{decision=~\"APPROVE|AMEND|REJECT\"}[1h])), 1)",
+     "legendFormat": "outcomes / decisions",
+     "refId": "A"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percentunit",
+     "min": 0,
+     "max": 1
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   },
+   "id": 13
+  },
+  {
+   "type": "timeseries",
+   "title": "Genealogy query p95 (budget 50 ms)",
+   "gridPos": {
+    "x": 0,
+    "y": 40,
+    "w": 12,
+    "h": 6
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "targets": [
+    {
+     "expr": "histogram_quantile(0.95, sum by (le) (rate(genealogy_query_seconds_bucket[5m])))",
+     "legendFormat": "p95",
+     "refId": "A"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s"
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   },
+   "id": 14
+  },
+  {
+   "type": "timeseries",
+   "title": "line-sim events produced",
+   "gridPos": {
+    "x": 12,
+    "y": 40,
+    "w": 12,
+    "h": 6
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "targets": [
+    {
+     "expr": "sum by (topic) (rate(line_sim_events_total[1m]))",
+     "legendFormat": "{{topic}}",
+     "refId": "A"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "reqps"
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   },
+   "id": 15
+  }
+ ]
+}
