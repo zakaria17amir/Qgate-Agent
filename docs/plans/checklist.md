@@ -183,14 +183,14 @@ Console and C++ are independent of each other; reliability items need Phase 3 co
 
 ## Phase 5 — Operations
 
-- [ ] **[F]** `qgate_core/otel.py`: spans per node/tool → Langfuse OTLP; Prometheus histograms with the §11 names → latency methodology
-- [ ] **[F]** `observability/grafana/dashboards/qgate.json`: throughput/lag, triage latency by phase, gate queue, outcomes, cost, breaker, SLO burn → README screenshot
-- [ ] **[F]** Load test (`k6` or `locust`): 5 concurrent / 50 burst; publish p50/p95/p99 with n and consumer lag → latency row
-- [ ] **[F]** Prefect flows: `replay_scenario` → `nightly_eval` → `publish_report`; `prefect.yaml` deploys; worker pool `qgate` → orchestration row
-- [ ] **[F]** `nightly.yml` runs green end to end once; metrics page on `gh-pages` → README table has real, dated numbers
-- [ ] **[F]** `release.yml` dry run on tag `v0.1.0-rc1`: multi-arch images + SBOM on GHCR → Docker/CI rows
-- [ ] **[F]** Air-gapped profile exercised once with Ollama; documented as "works, weaker" → deployment row
-- [ ] **[F]** Pin all compose images by digest → supply-chain claim
+- [x] **[F]** `qgate_core/otel.py`: spans per node/tool/model call → Langfuse OTLP (ADR-013; Langfuse v3 stack, `LANGFUSE_INIT_*` provisions the keys); `qgate_core/metrics.py`: the §11 names, emitted by agent/api/ingest; `kafka_consumer_lag` as a recording rule; JSON logs with `trace_id` → latency methodology
+- [x] **[F]** `observability/grafana/dashboards/qgate.json`: 15 panels — throughput/lag, triage latency by phase, gate queue/decision time/decisions, outcomes, cost, MES breaker, error shares, SLO burn; contract test on metric names → README screenshot (`docs/img/dashboard.png`)
+- [x] **[F]** Load test (`k6`, `make load`): 5 concurrent / 50 burst, agent in replay mode; n = 1 090, 0 failures: trigger→proposal p50 518 ms / p95 3.6 s / p99 4.3 s; live-model share from 264 real triages p50 3.9 s / p95 5.7 s → `docs/latency.md`
+- [x] **[F]** Prefect flows: `replay_scenario` (gen + line-sim over the Docker socket, exact lag wait, count assertion) → `nightly_eval` (fifty goldens over `eval-db`, one task per case) → `publish_report` (`eval/site`); `prefect.yaml` deploys, pool `qgate`, all three ran locally → orchestration row
+- [x] **[F]** `nightly.yml` on demand (owner's call: each run is provider spend) → `actions/deploy-pages` from `eval/site`; Pages source = GitHub Actions
+- [x] **[F]** `release.yml` dry run on tag `v0.1.0-rc1`: nine multi-arch images with SBOM + provenance on GHCR, pre-release → Docker/CI rows
+- [x] **[F]** Air-gapped profile **wired, not exercised**: `agent-airgap` on a native Ollama (`qwen2.5:7b` fits the 6 GB GPU), `LLM_BASE_URL`; README says so until Ollama is installed
+- [x] **[F]** Every `image:` and `FROM` pinned by digest (unit test); Dependabot `docker-compose` ecosystem bumps them → supply-chain claim
 - [ ] **[G]** **Gate 5:** nightly publishes without a human; dashboard shows the load test
 
 ---

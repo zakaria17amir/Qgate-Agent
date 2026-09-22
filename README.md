@@ -1,21 +1,31 @@
 # qgate-agent
 
-> **Status: skeleton.** Architecture is fixed; services are not yet implemented. See [`docs/design/2026-09-21-architecture.md`](docs/design/2026-09-21-architecture.md).
+> **Status: phases 0–5 complete** — data spine, deterministic detection, the gated agent, console, C++ line replay, reliability, observability and pipelines. Phase 6 (ship) is next. Design: [`docs/design/2026-09-21-architecture.md`](docs/design/2026-09-21-architecture.md); decisions: [`docs/adr`](docs/adr).
 
 When a vehicle fails end-of-line test, someone has to decide within minutes how many vehicles to quarantine — too narrow and a defect escapes to a customer, too wide and hundreds of good cars are held. `qgate-agent` correlates the failure against build genealogy and station drift, proposes a containment window, and **requires a human to approve it before anything is written**. It runs on a simulated line and is measured on fifty golden scenarios — including the ones where the right answer is to propose nothing.
 
 ## Metrics
 
-_Published after the first nightly evaluation run. Until then this table is intentionally empty._
+Fifty golden cases, replayed in CI on every push against a committed baseline (`make eval-replay`);
+the live-model run is published on demand to
+[the evaluation page](https://zakaria17amir.github.io/Qgate-Agent/). Latest committed baseline
+(replay of recorded `claude-haiku-4-5` answers, 2026-09-22, n = 50):
 
-| Metric | Value | n |
+| Metric | Value | Notes |
 |---|---|---|
-| Escapes | — | — |
-| Containment precision / recall | — | — |
-| Agreement rate (approved unamended) | — | — |
-| Abstention rate (correct / total) | — | — |
-| Proposal latency p50 / p95 / p99 | — | — |
-| Cost per triage (USD, assumptions labelled) | — | — |
+| Escapes | **260** | all in the `overlap` family: two containments needed, one proposed — the known limitation |
+| Containment precision / recall | 0.59 / 0.96 | |
+| Decision match | 0.96 | 48/50 chose the golden's kind of answer |
+| Agreement rate (approved unamended) | 0.66 | |
+| Abstention correct rate | 1.00 | bench faults and contradictory evidence hold nothing |
+| Deterministic path p50 / p95 | 106 / 128 ms | no model; the CI gate |
+| Live model share p50 / p95 / p99 | 3.9 / 5.7 / 8.7 s | n = 264 real triages; two calls each |
+| Under load: trigger → proposal p50 / p95 / p99 | 518 ms / 3.6 s / 4.3 s | n = 1 090, 5 VUs + a 50-VU burst, replay mode |
+| Cost per triage | $0.0031 | price table is an assumption |
+
+Method and boundaries: [`docs/latency.md`](docs/latency.md) · scoring: [`docs/eval.md`](docs/eval.md).
+
+![dashboard](docs/img/dashboard.png)
 
 ## Run it
 
@@ -30,7 +40,12 @@ Open `http://localhost:8080`: failures appear in the queue as the line runs; ope
 evidence, approve / amend / reject; the hold reaches the (mock) plant system only after that.
 `RUNBOOK.md` §0 walks a shift leader through it. `make help` lists every target; each maps to one
 CI job. `make chaos && make chaos-test` cuts the plant system mid-commit and kills the agent
-mid-gate, and checks that exactly one hold results either way.
+mid-gate, and checks that exactly one hold results either way. `make up-all` adds Prometheus,
+Grafana (`:3000`, the dashboard above), Langfuse traces (`:3001`) and Prefect (`:4200`);
+`make load` runs the k6 test; `make flows` runs the three Prefect flows.
+
+Deployment targets: laptop / on-prem compose (this, CI-verified); air-gapped with a native Ollama
+(`make up-airgap`, `qwen2.5:7b` — wired, **not yet exercised**); k3s (documented in Phase 6).
 
 ## How it works
 

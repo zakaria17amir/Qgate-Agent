@@ -16,3 +16,4 @@ One page per decision. Never edited after acceptance; a changed decision is a ne
 | [010](0010-dbmate-sql-migrations.md) | dbmate SQL migrations over an ORM | Accepted |
 | [011](0011-cpp-replays-exported-stream.md) | The C++ line-sim replays a stream the Python generator exported | Accepted |
 | [012](0012-commit-retry-loop-and-breaker.md) | Commit retry loop and breaker: approvals survive a plant-system outage | Accepted |
+| [013](0013-traces-to-langfuse-over-otlp.md) | Traces to Langfuse over OTLP; the v3 stack is the price | Accepted |

@@ -73,12 +73,13 @@ approve again — the api will refuse with 409 because the decision is already t
 
 ## 6. Kafka consumer lag is climbing
 
-**You see:** `/ready` on `ingest` is fine but rows arrive late; `rpk group describe ingest` shows
-growing LAG.
-**It means:** the line is producing faster than ingest commits (about 250 messages/s today: one
-commit per message).
-**Do:** it drains on its own after a replay burst. If it never catches up, restart `ingest`
-(§7); batching commits is the planned fix.
+**You see:** the *Consumer lag* panel on the Grafana dashboard climbs (`kafka_consumer_lag`,
+group `ingest`); `/ready` on `ingest` is fine but rows arrive late.
+**It means:** the line is producing faster than ingest commits (~1 300 messages/s on one laptop:
+one commit per message). A full 2 000-vehicle replay at full speed takes about two minutes to
+drain.
+**Do:** it drains on its own after a burst — watch the panel. If it never catches up, restart
+`ingest` (§7); batching commits is the planned fix.
 
 ## 7. Restarting a service safely
 
