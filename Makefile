@@ -9,7 +9,7 @@ EVAL           := --profile eval
 CHAOS          := --profile chaos
 
 .PHONY: help up up-infra up-all down logs ps demo chaos chaos-test \
-        install lint fmt typecheck unit contract integration eval-replay eval-live scan build \
+        install lint fmt typecheck unit contract integration eval-replay eval-live scan build console-e2e \
         token migrate goldens-freeze clean
 
 help: ## list targets
@@ -57,15 +57,18 @@ install: ## sync the uv workspace and console deps
 	uv sync --all-packages --group dev
 	cd console && npm ci
 
-lint: ## ruff, prettier, clang-format (no changes)
+lint: ## ruff, prettier, eslint, tsc (no changes)
 	uv run ruff check .
 	uv run ruff format --check .
-	cd console && npx prettier --check "src/**/*.{ts,tsx,json,css}" && npx tsc -b
+	cd console && npx prettier --check "src/**/*.{ts,tsx,json,css}" "e2e/*.ts" "*.ts" && npx eslint . && npx tsc -b
 
 fmt: ## apply formatters
 	uv run ruff check --fix .
 	uv run ruff format .
-	cd console && npx prettier --write "src/**/*.{ts,tsx,json,css}"
+	cd console && npx prettier --write "src/**/*.{ts,tsx,json,css}" "e2e/*.ts" "*.ts"
+
+console-e2e: ## Playwright smoke: qgate-eval serve (one golden at the gate) + built console
+	cd console && npx playwright test
 
 typecheck: ## mypy --strict on all Python packages
 	uv run mypy .

@@ -72,6 +72,22 @@ jobs:
         if: always()
         with: { name: eval-report, path: eval/report.md }
 
+  console:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v10.1.0
+        with: { version: "${{ env.UV_VERSION }}" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "24", cache: npm, cache-dependency-path: console/package-lock.json }
+      - run: cp .env.example .env
+      - run: make install
+      - run: cd console && npx playwright install --with-deps chromium
+      - run: make console-e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: { name: playwright-traces, path: console/test-results }
+
   scan:
     runs-on: ubuntu-24.04
     permissions: { contents: read, security-events: write }

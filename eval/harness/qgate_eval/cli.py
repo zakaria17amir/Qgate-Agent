@@ -84,6 +84,50 @@ def run(
 
 
 @app.command()
+def serve(
+    golden: str = typer.Option("drift-05", help="Golden to load and run to the gate"),
+    port: int = typer.Option(8000),
+    tokens_out: Path = typer.Option(
+        Path("console/e2e/.tokens.json"), help="Where to write dev JWTs for the console/Playwright"
+    ),
+    cassettes: Path = typer.Option(Path("eval/cassettes")),
+) -> None:
+    """The in-process stack on a real port with one proposal waiting at the gate: what the console
+    and its Playwright smoke test talk to. Replay mode, throwaway Postgres, no compose."""
+    import uvicorn
+
+    from qgate_core.auth import Role, mint
+    from qgate_eval.golden import Golden
+    from qgate_eval.runner import load_case
+    from qgate_eval.stack import SECRET, Stack
+
+    with _Database(None) as url:
+        stack = Stack(url, _model("replay"), "replay", cassettes)
+        try:
+            g = Golden.load(ROOT / "eval" / "goldens" / f"{golden}.yaml")
+            _, eol_ts = load_case(url, g)
+            assert stack.agent is not None
+            stack.agent.post(
+                "/triage",
+                json={
+                    "vin": g.trigger.vin,
+                    "fault_codes": g.trigger.fault_codes,
+                    "eol_ts": eol_ts.isoformat(),
+                    "golden_id": g.id,
+                },
+            )
+            tokens = {
+                role.value: mint(f"dev-{role.value}", role, SECRET)
+                for role in (Role.VIEWER, Role.APPROVER)
+            }
+            _write(tokens_out, json.dumps(tokens, indent=1) + "\n")
+            typer.echo(f"{golden} waiting at the gate; tokens in {tokens_out}")
+            uvicorn.run(stack.api_app, host="127.0.0.1", port=port, log_level="warning")
+        finally:
+            stack.close()
+
+
+@app.command()
 def goldens(
     out: Path = typer.Option(Path("eval/goldens")),
     scenarios_dir: Path = typer.Option(Path("scenarios")),

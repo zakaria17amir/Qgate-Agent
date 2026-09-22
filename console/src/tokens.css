@@ -1,0 +1,382 @@
+/* One token file, no design system. Colour carries state; everything else is quiet. */
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+
+:root {
+  --paper: #e9ecee;
+  --panel: #ffffff;
+  --ink: #14181c;
+  --ink-2: #4b5560;
+  --rule: #c9cfd5;
+  --amber: #c98a00;
+  --green: #1e7f4d;
+  --red: #b3261e;
+  --steel: #2a5a86;
+  --steel-ink: #ffffff;
+
+  --sans: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+  --fs-0: 13px;
+  --fs-1: 15px;
+  --fs-2: 18px;
+  --fs-3: 24px;
+  --fs-4: 40px;
+
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 16px;
+  --s-4: 24px;
+  --s-5: 40px;
+  --rail: 200px;
+  --content: 1100px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 var(--fs-1) / 1.5 var(--sans);
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 600;
+  line-height: 1.2;
+}
+h1 {
+  font-size: var(--fs-3);
+}
+h2 {
+  font-size: var(--fs-2);
+}
+
+a {
+  color: var(--steel);
+}
+
+code,
+.mono {
+  font-family: var(--mono);
+  font-size: 0.93em;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--steel);
+  outline-offset: 2px;
+}
+
+/* ---- layout: a rail and a column ---- */
+.shell {
+  display: grid;
+  grid-template-columns: var(--rail) 1fr;
+  min-height: 100vh;
+}
+.rail {
+  padding: var(--s-4) var(--s-3);
+  border-right: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+.rail .brand {
+  font-weight: 600;
+  font-size: var(--fs-2);
+}
+.rail .brand small {
+  display: block;
+  font-weight: 400;
+  font-size: var(--fs-0);
+  color: var(--ink-2);
+}
+.rail nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+.rail nav a {
+  padding: var(--s-2) var(--s-2);
+  text-decoration: none;
+  color: var(--ink);
+  border-left: 3px solid transparent;
+}
+.rail nav a[aria-current="page"] {
+  border-left-color: var(--steel);
+  font-weight: 500;
+}
+.rail .spacer {
+  flex: 1;
+}
+.content {
+  padding: var(--s-4) var(--s-5);
+  max-width: var(--content);
+}
+.content > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin-bottom: var(--s-4);
+}
+@media (max-width: 800px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+  .rail {
+    border-right: 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .content {
+    padding: var(--s-3);
+  }
+}
+
+/* ---- panels and tables ---- */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  padding: var(--s-3);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+}
+th,
+td {
+  text-align: left;
+  padding: var(--s-2) var(--s-3);
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+th {
+  font-weight: 500;
+  color: var(--ink-2);
+  font-size: var(--fs-0);
+}
+tr[data-href] {
+  cursor: pointer;
+}
+tr[data-href]:hover td {
+  background: #f4f6f8;
+}
+td.num,
+th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- state: the only place colour appears ---- */
+.state {
+  display: inline-block;
+  padding: 1px var(--s-2);
+  border: 1px solid currentColor;
+  font-size: var(--fs-0);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.state[data-state="PROPOSED"] {
+  color: var(--amber);
+}
+.state[data-state="COMMITTED"],
+.state[data-state="APPROVED"],
+.state[data-state="AMENDED"] {
+  color: var(--green);
+}
+.state[data-state="REJECTED"],
+.state[data-state="ESCALATED"],
+.state[data-state="EXPIRED"] {
+  color: var(--red);
+}
+.state[data-state="COMMIT_PENDING"] {
+  color: var(--steel);
+}
+
+/* time left before a proposal expires: a bar that empties */
+.expiry {
+  position: relative;
+  height: 6px;
+  width: 120px;
+  background: var(--rule);
+}
+.expiry > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--amber);
+}
+.expiry[data-late="true"] > span {
+  background: var(--red);
+}
+
+/* ---- controls ---- */
+.btn {
+  display: inline-block;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--steel);
+  background: var(--steel);
+  color: var(--steel-ink);
+  text-decoration: none;
+  cursor: pointer;
+  font-weight: 500;
+}
+.btn.quiet {
+  background: transparent;
+  color: var(--steel);
+}
+.btn[aria-disabled="true"],
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+label.field {
+  display: block;
+  margin-bottom: var(--s-3);
+}
+label.field > span {
+  display: block;
+  font-size: var(--fs-0);
+  color: var(--ink-2);
+  margin-bottom: var(--s-1);
+}
+input[type="text"],
+input[type="password"],
+input[type="datetime-local"],
+select,
+textarea {
+  width: 100%;
+  padding: var(--s-2);
+  border: 1px solid var(--rule);
+  background: var(--panel);
+}
+fieldset {
+  border: 1px solid var(--rule);
+  padding: var(--s-2) var(--s-3);
+  margin: 0 0 var(--s-3);
+}
+fieldset label {
+  margin-right: var(--s-3);
+}
+.big {
+  font-size: var(--fs-4);
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.muted {
+  color: var(--ink-2);
+}
+.error {
+  color: var(--red);
+}
+.empty {
+  padding: var(--s-5) var(--s-3);
+  color: var(--ink-2);
+  background: var(--panel);
+  border: 1px dashed var(--rule);
+}
+
+/* ---- tabs ---- */
+.tabs {
+  display: flex;
+  gap: var(--s-1);
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: var(--s-3);
+}
+.tabs button {
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: var(--s-2) var(--s-3);
+  cursor: pointer;
+  color: var(--ink-2);
+}
+.tabs button[aria-selected="true"] {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+  font-weight: 500;
+}
+
+/* ---- the token drawer ---- */
+dialog {
+  border: 1px solid var(--rule);
+  padding: var(--s-4);
+  width: min(520px, 90vw);
+}
+dialog::backdrop {
+  background: rgba(20, 24, 28, 0.35);
+}
+
+/* ---- the one chart: the window timeline ---- */
+.timeline {
+  width: 100%;
+  height: 96px;
+  display: block;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+}
+.timeline .window {
+  fill: #f1e4bf;
+}
+.timeline .tick {
+  stroke: var(--ink-2);
+}
+.timeline .onset {
+  stroke: var(--red);
+  stroke-width: 2;
+}
+.timeline .trigger {
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+.timeline text {
+  font: 11px var(--mono);
+  fill: var(--ink-2);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--s-3);
+  margin-bottom: var(--s-4);
+}
+.stats .panel > span {
+  display: block;
+  font-size: var(--fs-0);
+  color: var(--ink-2);
+}
+.stats .panel > strong {
+  font-size: var(--fs-3);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .tabs button,
+  .btn {
+    transition: none;
+  }
+}

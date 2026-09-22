@@ -45,3 +45,4 @@ data/
 .DS_Store
 Thumbs.db
 console/tsconfig.tsbuildinfo
+console/e2e/.tokens.json

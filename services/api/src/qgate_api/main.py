@@ -33,7 +33,7 @@ class ApiSettings(Settings):
     jwt_secret: str = "dev-only-change-me"  # noqa: S105 — overridden by JWT_SECRET in .env
     approval_timeout_s: int = 1800  # env APPROVAL_TIMEOUT_S
     agent_base_url: str = "http://agent:8001"
-    cors_origins: str = "http://localhost:8080,http://localhost:4173"  # the console's origins
+    cors_origins: str = "http://localhost:8080,http://localhost:4173,http://localhost:5173"
 
 
 class AgentClient(Protocol):
