@@ -8,6 +8,7 @@ path prove its retries, breaker and idempotency against something that actually 
 import os
 import time
 import uuid
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any, Literal
@@ -52,6 +53,20 @@ class ChaosRequest(BaseModel):
     status: int = 503
 
 
+@dataclass
+class Chaos:
+    """The active fault injection, if any; expires on its own."""
+
+    mode: str | None = None
+    until: float = 0.0
+    status: int = 503
+
+    def active(self) -> bool:
+        if self.mode is not None and time.monotonic() > self.until:
+            self.mode = None
+        return self.mode is not None
+
+
 def build_app(api_key: str, chaos_enabled: bool) -> FastAPI:
     app = FastAPI(title="Mock MES — Hold Management", version="1.0.0")
     authored: dict[str, Any] = yaml.safe_load(CONTRACT.read_text(encoding="utf8"))
@@ -59,20 +74,19 @@ def build_app(api_key: str, chaos_enabled: bool) -> FastAPI:
     holds: dict[str, Hold] = {}  # hold_ref -> hold
     by_key: dict[str, tuple[HoldRequest, str]] = {}  # idempotency key -> (body, hold_ref)
     stats = {"holds": 0, "duplicate_replays": 0, "duplicate_conflicts": 0}
-    chaos: dict[str, object] = {}  # active injection: mode, until, status
+    chaos = Chaos()
 
     def authed(x_api_key: Annotated[str | None, Header()] = None) -> None:
         if x_api_key != api_key:
             raise HTTPException(401, "invalid API key")
 
     def maybe_misbehave() -> None:
-        if not chaos or time.monotonic() > float(chaos["until"]):  # type: ignore[arg-type]
-            chaos.clear()
+        if not chaos.active():
             return
-        if chaos["mode"] == "error":
-            raise HTTPException(int(chaos["status"]), "injected outage")  # type: ignore[call-overload]
-        if chaos["mode"] == "latency":
-            time.sleep(5)  # long enough to trip a sane client timeout
+        if chaos.mode == "error":
+            raise HTTPException(chaos.status, "injected outage")
+        if chaos.mode == "latency":
+            time.sleep(5)  # the injected fault: long enough to trip a sane client timeout
 
     @app.get("/health")
     def health() -> dict[str, str]:
@@ -100,7 +114,7 @@ def build_app(api_key: str, chaos_enabled: bool) -> FastAPI:
         holds[hold.hold_ref] = hold
         by_key[key] = (body, hold.hold_ref)
         stats["holds"] += 1
-        if chaos.get("mode") == "drop_ack":  # the hold exists, but the caller never hears back
+        if chaos.active() and chaos.mode == "drop_ack":  # hold exists; caller never hears back
             raise HTTPException(504, "injected dropped acknowledgement")
         return hold
 
@@ -114,7 +128,11 @@ def build_app(api_key: str, chaos_enabled: bool) -> FastAPI:
     def set_chaos(body: ChaosRequest) -> None:
         if not chaos_enabled:
             raise HTTPException(403, "chaos disabled; set MES_CHAOS=1")
-        chaos.update(mode=body.mode, until=time.monotonic() + body.seconds, status=body.status)
+        chaos.mode, chaos.until, chaos.status = (
+            body.mode,
+            time.monotonic() + body.seconds,
+            body.status,
+        )
 
     @app.get("/_stats", dependencies=[Depends(authed)])
     def get_stats() -> dict[str, int]:
