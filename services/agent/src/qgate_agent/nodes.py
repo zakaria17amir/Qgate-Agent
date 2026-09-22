@@ -269,6 +269,7 @@ def make_nodes(deps: Deps) -> dict[str, Callable[[TriageState], dict[str, Any]]]
                 f"drift {s['drift'].verdict} {s['drift'].severity}",
                 "draft_order": s["draft_order"],
                 "golden_id": s.get("golden_id"),
+                "evidence": _evidence(s),
             },
         )
         r.raise_for_status()
@@ -396,10 +397,33 @@ def _no_proposal(deps: Deps, s: TriageState, outcome: str, reason: str) -> dict[
             "vins": [],
             "reason": reason,
             "golden_id": s.get("golden_id"),
+            "evidence": _evidence(s),
         },
     )
     r.raise_for_status()
     return {"containment_id": r.json()["containment_id"], "outcome": outcome, "draft_order": reason}
+
+
+def _evidence(s: TriageState) -> dict[str, Any]:
+    """What the human sees on the case page: the same objects the rules decided on."""
+    return {
+        "genealogy": [
+            {
+                "station_id": v.station_id,
+                "entered_at": _iso(v.entered_at),
+                "shift_id": v.shift_id,
+                "parts_lots": v.parts_lots,
+                "out_of_tolerance": [
+                    m.characteristic_id for m in v.measurements if m.out_of_tolerance
+                ],
+            }
+            for v in s["genealogy"].visits
+        ],
+        "hypotheses": [h.model_dump() for h in s["hypotheses"]],
+        "siblings": s["siblings"].model_dump(mode="json"),
+        "drift": s["drift"].model_dump(mode="json"),
+        "bench": s["bench"].model_dump(mode="json"),
+    }
 
 
 def _ask[S: BaseModel](

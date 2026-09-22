@@ -108,6 +108,9 @@ def test_drift_case_waits_at_the_gate_then_commits_on_approve(stack: Stack) -> N
     assert (
         g.trigger.vin in detail["vins"] and stack.mes.get("/_stats").json()["holds"] == 0
     )  # nothing written yet
+    ev = detail["evidence"]  # the console shows what the rules saw
+    assert ev["drift"]["verdict"] in ("DRIFT", "STEP") and len(ev["siblings"]["vins"]) >= 2
+    assert any(v["station_id"] == "ST-19" for v in ev["genealogy"])
 
     r = stack.api.post(
         f"/containments/{cid}/approve", json={"reason": "looks right"}, headers=stack.human()

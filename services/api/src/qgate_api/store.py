@@ -29,6 +29,7 @@ class Proposal(BaseModel):
     draft_order: str | None = None
     golden_id: str | None = None  # eval harness only
     state: str = "PROPOSED"  # ESCALATED for "no proposal"
+    evidence: dict[str, Any] = Field(default_factory=dict)  # for the console's case view
 
 
 class Outcome(BaseModel):
@@ -62,8 +63,8 @@ def propose(conn: psycopg.Connection, p: Proposal, timeout: timedelta) -> uuid.U
     conn.execute(
         "insert into qgate.containment (containment_id, thread_id, state, kind, station_id, "
         "window_start, window_end, lot_ids, vin_count, confidence, reason, draft_order, "
-        "proposed_at, expires_at, idempotency_key) "
-        "values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+        "proposed_at, expires_at, idempotency_key, evidence) "
+        "values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
         (
             cid,
             p.thread_id,
@@ -80,6 +81,7 @@ def propose(conn: psycopg.Connection, p: Proposal, timeout: timedelta) -> uuid.U
             now,
             now + timeout if p.state == "PROPOSED" else None,
             cid,
+            Jsonb(p.evidence),
         ),
     )
     with conn.cursor() as cur:

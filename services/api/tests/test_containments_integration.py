@@ -106,3 +106,17 @@ def test_sweep_expires_stale_proposals_only(api: TestClient, pg_url: str) -> Non
         expired = sweep_expired(conn, now=datetime.now(UTC) + timedelta(hours=1))
     assert uuid.UUID(cid) in expired
     assert api.get(f"/containments/{cid}", headers=auth(Role.VIEWER)).json()["state"] == "EXPIRED"
+
+
+def test_evidence_travels_with_the_proposal(api: TestClient) -> None:
+    """The console's case view reads what the agent saw, from the row, not from the agent."""
+    evidence = {
+        "siblings": {"vins": ["SYN2"], "by_shift": {"S1": 1}},
+        "drift": {"verdict": "DRIFT"},
+    }
+    cid = api.post(
+        "/internal/containments",
+        json={**proposal(), "evidence": evidence},
+        headers=auth(Role.SERVICE),
+    ).json()["containment_id"]
+    assert api.get(f"/containments/{cid}", headers=auth(Role.VIEWER)).json()["evidence"] == evidence
