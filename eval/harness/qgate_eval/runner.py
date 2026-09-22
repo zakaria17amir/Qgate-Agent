@@ -2,7 +2,7 @@
 
 import logging
 from collections.abc import Callable
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import psycopg
@@ -20,28 +20,35 @@ ROOT = Path(__file__).parents[3]
 LINE = Line.load(ROOT / "scenarios" / "line.yaml")
 
 
-def run_golden(stack: Stack, g: Golden, on_log: Callable[[str], None] = log.info) -> CaseResult:
-    """Load the case, trigger the agent, act as the golden's human, read back what happened."""
+def load_case(pg_url: str, g: Golden) -> tuple[Run, datetime]:
+    """Regenerate the golden's run into an emptied database; returns it and the trigger's EOL
+    time (what the consumer would pass as ``eol_ts``)."""
     run = generate(
         LINE,
         Scenario.load(ROOT / "scenarios" / f"{g.scenario}.yaml", LINE).model_copy(
             update={"seed": g.seed}
         ),
     )
-    with psycopg.connect(stack.pg_url) as conn:
+    with psycopg.connect(pg_url) as conn:
         truncate_facts(conn)
         copy_run(conn, run)
         eol_ts = conn.execute(
             "select tested_at from qgate.fact_eol_result where vin = %s", (g.trigger.vin,)
         ).fetchone()
-    assert eol_ts is not None and stack.agent is not None
+    assert eol_ts is not None
+    return run, eol_ts[0]
 
+
+def run_golden(stack: Stack, g: Golden, on_log: Callable[[str], None] = log.info) -> CaseResult:
+    """Load the case, trigger the agent, act as the golden's human, read back what happened."""
+    run, eol_ts = load_case(stack.pg_url, g)
+    assert stack.agent is not None
     tid = stack.agent.post(
         "/triage",
         json={
             "vin": g.trigger.vin,
             "fault_codes": g.trigger.fault_codes,
-            "eol_ts": eol_ts[0].isoformat(),
+            "eol_ts": eol_ts.isoformat(),
             "golden_id": g.id,
         },
     ).json()["thread_id"]

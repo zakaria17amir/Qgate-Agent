@@ -167,6 +167,7 @@ services:
     environment:
       <<: *python-env
       PORT: "8001"
+      MES_BASE_URL: ${MES_BASE_URL:-http://mock-mes:8003}   # `make chaos` routes it via toxiproxy
       CASSETTE_DIR: /tmp/cassettes   # containers never write into the repo's recorded set
       DATABASE_URL_AGENT_RO: postgres://agent_ro:${POSTGRES_PASSWORD}@postgres:5432/qgate
       DATABASE_URL_CHECKPOINT_RW: postgres://checkpoint_rw:${POSTGRES_PASSWORD}@postgres:5432/qgate

@@ -8,7 +8,7 @@ OBS            := --profile obs
 EVAL           := --profile eval
 CHAOS          := --profile chaos
 
-.PHONY: help up up-infra up-all down logs ps demo chaos \
+.PHONY: help up up-infra up-all down logs ps demo chaos chaos-test \
         install lint fmt typecheck unit contract integration eval-replay eval-live scan build \
         token migrate goldens-freeze clean
 
@@ -40,7 +40,10 @@ demo: ## replay the tool-wear scenario at 10x and open the console
 	@echo "console: http://localhost:8080   api docs: http://localhost:8000/docs"
 
 chaos: ## start core + toxiproxy with agent->mock-mes routed through the proxy
-	$(COMPOSE) $(CORE) $(CHAOS) up -d --build
+	MES_BASE_URL=http://toxiproxy:8003 $(COMPOSE) $(CORE) $(CHAOS) up -d --build
+
+chaos-test: ## run tests/chaos against a `make chaos` stack (kills containers, cuts links)
+	CHAOS=1 uv run pytest tests/chaos -m chaos -v
 
 migrate: ## apply db/migrations with dbmate
 	$(COMPOSE) $(CORE) run --rm migrate up
