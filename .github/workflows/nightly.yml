@@ -1,9 +1,8 @@
-# Live-model evaluation. Costs money; runs once a day and on demand. Publishes the numbers the README shows.
+# Live-model evaluation. Costs money (~$0.20 per run on claude-haiku-4-5), so it runs on demand
+# only: Actions -> nightly -> Run workflow. Publishes the numbers the README shows.
 name: nightly
 
 on:
-  schedule:
-    - cron: "0 2 * * *"
   workflow_dispatch:
 
 jobs:
