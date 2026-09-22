@@ -8,8 +8,9 @@ import psycopg
 import typer
 
 from qgate_core import kafka
-from qgate_core.models import BuildEvent, LineRecord, Measurement
 from qgate_core.settings import Settings
+from qgate_generator.export import export as write_manifest
+from qgate_generator.export import stamp_ms
 from qgate_generator.line import Line
 from qgate_generator.load import copy_run, truncate_facts
 from qgate_generator.scenario import Scenario
@@ -46,15 +47,27 @@ def replay(
     kafka.ensure_topics(settings)
     p = kafka.producer(settings)
     t0 = time.monotonic()
-    first = _stamp(run.events[0])
+    first = stamp_ms(run.events[0])
     for e in run.events:
         if speed > 0:  # sleep until this event's simulated time, compressed by `speed`
-            due = (_stamp(e) - first) / speed
+            due = (stamp_ms(e) - first) / 1000 / speed
             if (wait := due - (time.monotonic() - t0)) > 0:
                 time.sleep(wait)
         kafka.produce(settings, p, e)
     p.flush(30)
     typer.echo(f"{len(run.events)} events from {scenario} produced")
+
+
+@app.command()
+def export(
+    scenario: str = typer.Option(..., help="Scenario id, e.g. tool_wear"),
+    out: Path = typer.Option(..., help="Manifest path, e.g. /data/tool_wear.jsonl"),
+    vehicles: int | None = typer.Option(None),
+    scenarios_dir: Path = SCENARIOS,
+) -> None:
+    """Write the scenario's events as the JSONL manifest the C++ line-sim replays (ADR-011)."""
+    n = write_manifest(load_run(scenario, scenarios_dir, vehicles), out)
+    typer.echo(f"{n} events from {scenario} written to {out}")
 
 
 @app.command()
@@ -103,11 +116,3 @@ def seed_dims_cmd(
     with psycopg.connect(database_url) as conn:
         seed_dims(conn, Line.load(scenarios_dir / "line.yaml"))
     typer.echo("dims seeded")
-
-
-def _stamp(e: LineRecord) -> float:
-    if isinstance(e, BuildEvent):
-        return e.entered_at.timestamp()
-    if isinstance(e, Measurement):
-        return e.measured_at.timestamp()
-    return e.tested_at.timestamp()
