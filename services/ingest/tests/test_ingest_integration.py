@@ -9,6 +9,7 @@ import pytest
 from qgate_core import kafka
 from qgate_core.settings import Settings
 from qgate_generator.line import Line
+from qgate_generator.load import truncate_facts
 from qgate_generator.scenario import Scenario
 from qgate_generator.seed import seed_dims
 from qgate_generator.stream import generate
@@ -24,6 +25,7 @@ def settings(kafka_settings: Settings, pg_url: str) -> Settings:
     kafka.ensure_topics(kafka_settings)
     with psycopg.connect(pg_url) as conn:
         seed_dims(conn, Line.load(SCENARIOS / "line.yaml"))
+        truncate_facts(conn)  # the session database is shared; other tests leave runs behind
     return kafka_settings.model_copy(update={"database_url": pg_url})
 
 
