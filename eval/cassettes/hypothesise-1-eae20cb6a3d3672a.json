@@ -10,24 +10,19 @@
   "ranked": [
    {
     "characteristic_id": "CH-04-GAP",
-    "reasoning": "ST-04 had out-of-tolerance measurements in the build record and is the primary station where door hang left characteristics are measured, making it the most likely source of fault F-04.",
-    "station_id": "ST-04"
-   },
-   {
-    "characteristic_id": "CH-04-FLUSH",
-    "reasoning": "ST-04 had out-of-tolerance measurements in the build record and measures door flush characteristics that can also produce fault F-04.",
+    "reasoning": "ST-04 had an out-of-tolerance measurement in the build record, directly matching where door hang left characteristics are measured, making it the most likely source of fault F-04.",
     "station_id": "ST-04"
    },
    {
     "characteristic_id": "CH-03-GAP",
-    "reasoning": "ST-03 was not flagged in the build record as out of tolerance, so roof geometry error is less likely to be the source despite being a possible contributor to door aperture changes.",
+    "reasoning": "ST-03 is not supported by the evidence as no out-of-tolerance measurements were recorded at this station, despite its potential to indirectly affect door aperture geometry.",
     "station_id": "ST-03"
    }
   ]
  },
  "prompt_id": "hypothesise",
  "usage": {
-  "completion_tokens": 260,
+  "completion_tokens": 189,
   "prompt_tokens": 952
  },
  "version": "1"

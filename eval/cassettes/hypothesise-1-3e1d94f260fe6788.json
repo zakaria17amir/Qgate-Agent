@@ -10,24 +10,24 @@
   "ranked": [
    {
     "characteristic_id": "CH-13-THICK",
-    "reasoning": "ST-13 had out-of-tolerance measurements in the build record, and this station directly measures primer thickness which is the primary source of fault F-13.",
+    "reasoning": "ST-13 had out-of-tolerance measurements and is where primer characteristics are directly measured, making it the most likely source of fault F-13.",
     "station_id": "ST-13"
    },
    {
     "characteristic_id": "CH-13-VISC",
-    "reasoning": "ST-13 also measures primer viscosity which can affect fault F-13, and this station showed out-of-tolerance conditions in the vehicle's build record.",
+    "reasoning": "ST-13 had out-of-tolerance measurements and viscosity is also measured at this primer application station, supporting it as a secondary likely cause.",
     "station_id": "ST-13"
    },
    {
     "characteristic_id": "CH-12-THICK",
-    "reasoning": "ST-12 is a secondary contributor where thin e-coat can indirectly influence primer build, but no out-of-tolerance measurements were recorded at this station for this vehicle.",
+    "reasoning": "ST-12 is a potential indirect contributor through e-coat thickness affecting primer build, but no out-of-tolerance evidence was recorded at this station.",
     "station_id": "ST-12"
    }
   ]
  },
  "prompt_id": "hypothesise",
  "usage": {
-  "completion_tokens": 259,
+  "completion_tokens": 248,
   "prompt_tokens": 951
  },
  "version": "1"

@@ -15,14 +15,14 @@
    },
    {
     "characteristic_id": "CH-13-VISC",
-    "reasoning": "ST-13 was in tolerance on both characteristics, so while primer viscosity can influence base-coat film build, the evidence does not support this as the fault source.",
+    "reasoning": "ST-13 was in tolerance, so while primer viscosity can influence base-coat film build, the evidence does not support this as the fault source.",
     "station_id": "ST-13"
    }
   ]
  },
  "prompt_id": "hypothesise",
  "usage": {
-  "completion_tokens": 176,
+  "completion_tokens": 173,
   "prompt_tokens": 953
  },
  "version": "1"

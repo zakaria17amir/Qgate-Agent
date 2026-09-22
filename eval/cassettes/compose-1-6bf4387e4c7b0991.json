@@ -11,11 +11,11 @@
  },
  "model": "claude-haiku-4-5",
  "output": {
-  "text": "CONTAINMENT ORDER - SINGLE\n\nHold vehicle SYN00000000000180 at ST-06 (Hood fit). This vehicle failed end-of-line test with code F-06 and must not proceed to the next station. No other vehicles show the same defect code; drift is NONE (LOW) and the station is bench capable. Before releasing this vehicle, verify hood fit and alignment at ST-06 against specification, then confirm the end-of-line test passes with no F-06 code present."
+  "text": "CONTAINMENT ORDER - SINGLE\n\nHold vehicle SYN00000000000180 at ST-06 (Hood fit). This vehicle failed end-of-line test with code F-06 and must not proceed to the next station. No other vehicles show the same defect code; drift is NONE (LOW) and the station is bench capable. Before release, verify hood fit and alignment at ST-06 against specification, then confirm the end-of-line test passes."
  },
  "prompt_id": "compose",
  "usage": {
-  "completion_tokens": 144,
+  "completion_tokens": 134,
   "prompt_tokens": 805
  },
  "version": "1"

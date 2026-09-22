@@ -65,6 +65,7 @@ def test_correlation_is_scoped_to_the_station_and_breaks_down_by_lot(
     assert r.n > 20 and trigger not in r.vins
     assert sum(r.by_shift.values()) == r.n and sum(r.by_lot.values()) >= r.n
     assert r.top_lot == LOT and r.top_lot_share > 0.8
+    assert len(r.entered_at) == r.n and r.spread_takts() > 60  # carriers span many lot blocks
     nothing = find_correlated_failures(conn, "F-24", "ST-05", start, end)
     assert (
         nothing.n == r.n + 1

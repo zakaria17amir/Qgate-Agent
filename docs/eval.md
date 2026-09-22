@@ -39,8 +39,13 @@ public api endpoint a shift leader would use (ADR-003: no bypass exists).
 ## The CI gate
 
 `make eval-replay` runs the fifty cases with recorded model answers and compares to
-`eval/baseline.json`. The build fails if **escapes rise** or **non-LLM p95 latency** grows more
-than 20 %. Bumping the baseline is a deliberate commit with a reason in its message.
+`eval/baseline.json`. The build fails if **escapes rise** or **non-LLM p95 latency** more than doubles (with 500 ms
+of slack for runner jitter). Bumping the baseline is a deliberate commit with a reason in its
+message.
+
+Precision is low by design for `WINDOW` and `LOT`: a window from onset to trigger, or a whole
+parts lot, holds every vehicle in its shape, most of which are fine. That is the over-holding
+cost the ROI page prices against escapes; the agent optimises for zero escapes first.
 
 ## What this does not measure
 

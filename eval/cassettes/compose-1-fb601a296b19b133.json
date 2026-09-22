@@ -1,0 +1,22 @@
+{
+ "inputs": {
+  "evidence": "112 other vehicles with the same code; drift NONE (LOW); bench capable True",
+  "fault_codes": "F-24",
+  "kind": "SINGLE",
+  "scope": "this vehicle only",
+  "station_id": "ST-24",
+  "station_name": "Battery install",
+  "vin": "SYN00000000001100",
+  "vin_count": 1
+ },
+ "model": "claude-haiku-4-5",
+ "output": {
+  "text": "CONTAINMENT ORDER - SINGLE\n\nHold vehicle SYN00000000001100 at ST-24 (Battery install). This vehicle failed end-of-line test with fault code F-24; 112 other vehicles carry the same code and the station is bench capable for repair. Before proceeding, verify battery connection torque and polarity at the install point."
+ },
+ "prompt_id": "compose",
+ "usage": {
+  "completion_tokens": 110,
+  "prompt_tokens": 805
+ },
+ "version": "1"
+}

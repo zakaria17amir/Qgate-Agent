@@ -15,14 +15,14 @@
    },
    {
     "characteristic_id": "CH-16-RES",
-    "reasoning": "ST-16 is a secondary candidate; while harness routing can foul the brake line, there is no evidence of out-of-tolerance measurements at this station in the build record.",
+    "reasoning": "ST-16 is a secondary candidate per the fault map, but the vehicle's build record shows no out-of-tolerance measurements at this station, making it less likely than ST-18.",
     "station_id": "ST-16"
    }
   ]
  },
  "prompt_id": "hypothesise",
  "usage": {
-  "completion_tokens": 185,
+  "completion_tokens": 186,
   "prompt_tokens": 946
  },
  "version": "1"

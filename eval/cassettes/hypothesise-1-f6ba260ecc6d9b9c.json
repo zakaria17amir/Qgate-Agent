@@ -10,24 +10,19 @@
   "ranked": [
    {
     "characteristic_id": "CH-24-TORQUE",
-    "reasoning": "ST-24 is directly implicated by the evidence showing out-of-tolerance measurements at this station, and battery install torque is a primary characteristic that produces fault code F-24.",
-    "station_id": "ST-24"
-   },
-   {
-    "characteristic_id": "CH-24-VOLT",
-    "reasoning": "ST-24 voltage measurement is the second characteristic at the station with confirmed out-of-tolerance evidence, making it the second most likely source of the F-24 fault.",
+    "reasoning": "ST-24 is the direct source of fault F-24 and the vehicle's build record shows an out-of-tolerance measurement at this station, making it the most likely origin.",
     "station_id": "ST-24"
    },
    {
     "characteristic_id": "CH-16-RES",
-    "reasoning": "ST-16 shows no out-of-tolerance measurements in the build record, so while harness terminal fit could theoretically affect voltage reading, there is no direct evidence supporting this as the fault source.",
+    "reasoning": "ST-16 could contribute to the fault through harness terminal fit issues, but no out-of-tolerance measurements were recorded at this station in the build record.",
     "station_id": "ST-16"
    }
   ]
  },
  "prompt_id": "hypothesise",
  "usage": {
-  "completion_tokens": 271,
+  "completion_tokens": 187,
   "prompt_tokens": 956
  },
  "version": "1"

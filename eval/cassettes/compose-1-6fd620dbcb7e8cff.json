@@ -11,11 +11,11 @@
  },
  "model": "claude-haiku-4-5",
  "output": {
-  "text": "CONTAINMENT ORDER - SINGLE\n\nHold vehicle SYN00000000000132 at ST-17 (Cockpit module). This vehicle failed end-of-line test with F-17 and must not proceed to the next station. No other vehicles carry the same code; drift is LOW and the issue is bench capable. \n\nCheck the cockpit module assembly first at ST-17 for defects matching F-17 failure mode before any rework or release decision."
+  "text": "CONTAINMENT ORDER - SINGLE\n\nHold vehicle SYN00000000000132 at ST-17 (Cockpit module). This vehicle failed end-of-line test with F-17 and must not proceed to the next station. No other vehicles carry the same code; drift is NONE (LOW) and the issue is bench capable. Immediately inspect the cockpit module assembly at ST-17 for defects matching F-17 failure mode before any rework or release decision."
  },
  "prompt_id": "compose",
  "usage": {
-  "completion_tokens": 134,
+  "completion_tokens": 137,
   "prompt_tokens": 807
  },
  "version": "1"

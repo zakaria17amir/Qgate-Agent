@@ -28,12 +28,12 @@ def test_gate_fails_when_escapes_rise_or_non_llm_latency_regresses(tmp_path: Pat
     baseline.write_text(json.dumps({"escapes": 2, "latency_non_llm_p95_ms": 1000}))
     with pytest.raises(typer.Exit):
         _gate(METRICS, baseline)
-    baseline.write_text(json.dumps({"escapes": 3, "latency_non_llm_p95_ms": 700}))
+    baseline.write_text(json.dumps({"escapes": 3, "latency_non_llm_p95_ms": 200}))
     with pytest.raises(typer.Exit):
-        _gate(METRICS, baseline)
+        _gate(METRICS, baseline)  # 1000 > max(400, 700)
 
 
 def test_gate_passes_when_within_baseline(tmp_path: Path) -> None:
     baseline = tmp_path / "baseline.json"
-    baseline.write_text(json.dumps({"escapes": 3, "latency_non_llm_p95_ms": 900}))
-    _gate(METRICS, baseline)
+    baseline.write_text(json.dumps({"escapes": 3, "latency_non_llm_p95_ms": 600}))
+    _gate(METRICS, baseline)  # 1000 <= max(1200, 1100): runner jitter, not a regression

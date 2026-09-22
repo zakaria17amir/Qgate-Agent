@@ -15,7 +15,7 @@
    },
    {
     "characteristic_id": "CH-09-GEOM",
-    "reasoning": "ST-09 is a secondary candidate as body geometry errors can manifest as cockpit gap issues, but no out-of-tolerance evidence was recorded at this station.",
+    "reasoning": "ST-09 is a secondary candidate since body geometry errors can manifest as cockpit gap issues, but no out-of-tolerance evidence was recorded at this station.",
     "station_id": "ST-09"
    }
   ]

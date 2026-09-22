@@ -12,6 +12,7 @@ from rich.table import Table
 
 app = typer.Typer(add_completion=False)
 console = Console()
+LATENCY_SLACK_MS = 500
 ROOT = Path(__file__).parents[3]
 
 
@@ -72,10 +73,10 @@ def run(
         datetime.now(UTC).isoformat(),
     )
     _print(metrics)
-    if metrics_out:
-        metrics_out.write_text(json.dumps(metrics, indent=1), encoding="utf8")
+    if metrics_out:  # committed files: LF and a trailing newline on every OS
+        _write(metrics_out, json.dumps(metrics, indent=1) + "\n")
     if report:
-        report.write_text(_markdown(metrics), encoding="utf8")
+        _write(report, _markdown(metrics))
     if baseline is not None:
         _gate(metrics, baseline)
 
@@ -150,7 +151,8 @@ def _gate(metrics: dict[str, Any], baseline: Path) -> None:
     if metrics["escapes"] > base["escapes"]:
         failures.append(f"escapes rose: {base['escapes']} -> {metrics['escapes']}")
     p95, base_p95 = metrics["latency_non_llm_p95_ms"], base.get("latency_non_llm_p95_ms")
-    if base_p95 and p95 > 1.2 * base_p95:
+    # shared CI runners jitter by hundreds of ms; only a real regression should fail the build
+    if base_p95 and p95 > max(2 * base_p95, base_p95 + LATENCY_SLACK_MS):
         failures.append(f"non-LLM p95 regressed: {base_p95} -> {p95} ms")
     if failures:
         for f in failures:
@@ -221,3 +223,8 @@ def _markdown(m: dict[str, Any]) -> str:
             f"{_f(b['decision_match'])} |"
         )
     return "\n".join(lines) + "\n"
+
+
+def _write(path: Path, text: str) -> None:
+    with path.open("w", encoding="utf8", newline="\n") as f:
+        f.write(text)

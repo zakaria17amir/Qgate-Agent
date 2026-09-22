@@ -1,0 +1,22 @@
+{
+ "inputs": {
+  "evidence": "40 other vehicles with the same code; drift STEP (LOW); bench capable True",
+  "fault_codes": "F-24",
+  "kind": "WINDOW",
+  "scope": "2026-01-05 08:03 to 2026-01-05 11:51 UTC",
+  "station_id": "ST-24",
+  "station_name": "Battery install",
+  "vin": "SYN00000000000322",
+  "vin_count": 228
+ },
+ "model": "claude-haiku-4-5",
+ "output": {
+  "text": "CONTAINMENT ORDER - WINDOW\n\nHold 228 vehicles produced at ST-24 (Battery install) between 2026-01-05 08:03 and 2026-01-05 11:51 UTC. Vehicle SYN00000000000322 failed end-of-line test with code F-24, and 40 other vehicles show the same failure code, indicating a systematic defect in battery installation during this window. Check the battery connector torque specification and calibration status of the torque tool at ST-24 first. Do not release vehicles until root cause is confirmed and corrective action is verified."
+ },
+ "prompt_id": "compose",
+ "usage": {
+  "completion_tokens": 168,
+  "prompt_tokens": 828
+ },
+ "version": "1"
+}

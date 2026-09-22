@@ -11,11 +11,11 @@
  },
  "model": "claude-haiku-4-5",
  "output": {
-  "text": "CONTAINMENT ORDER - WINDOW TYPE\n\nHold 69 vehicles produced at ST-19 (Steering column) between 2026-01-05 23:00 and 2026-01-06 00:09 UTC. Vehicle SYN00000000001060 failed end-of-line test with code F-19, and four additional vehicles show the same failure code, indicating a systematic defect in steering column assembly during this window. Drift is LOW and the issue is bench capable.\n\nAt ST-19, immediately inspect the steering column fixture alignment and verify all torque wrench calibrations. Do not release any vehicles from this production window until root cause is confirmed and corrective action is validated."
+  "text": "CONTAINMENT ORDER - WINDOW\n\nHold 69 vehicles produced at ST-19 (Steering column) between 2026-01-05 23:00 and 2026-01-06 00:09 UTC. Vehicle SYN00000000001060 failed end-of-line test with code F-19; four additional vehicles show the same failure code, indicating a systematic defect at this station. Do not release any vehicles from this window until investigation is complete. First, verify all steering column assemblies at ST-19 for proper alignment and torque specifications. Bench testing is available for validation. Report findings immediately."
  },
  "prompt_id": "compose",
  "usage": {
-  "completion_tokens": 185,
+  "completion_tokens": 170,
   "prompt_tokens": 829
  },
  "version": "1"

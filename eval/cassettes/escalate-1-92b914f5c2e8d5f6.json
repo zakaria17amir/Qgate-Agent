@@ -1,0 +1,19 @@
+{
+ "inputs": {
+  "bench": "capable=True",
+  "drift": "STEP MEDIUM",
+  "fault_codes": "F-18",
+  "siblings": 1,
+  "vin": "SYN00000000000705"
+ },
+ "model": "claude-haiku-4-5",
+ "output": {
+  "text": "Vehicle SYS00000000000705 (F-18) escalation contradicts standard protocol: bench capability is confirmed capable=True, yet triage proceeds without containment despite only one correlated failure and STEP MEDIUM station drift. This violates the requirement that capable benches must propose containment before escalation. A human should first review the bench capability assessment and determine why containment was bypassed despite the system's confirmed readiness."
+ },
+ "prompt_id": "escalate",
+ "usage": {
+  "completion_tokens": 124,
+  "prompt_tokens": 759
+ },
+ "version": "1"
+}

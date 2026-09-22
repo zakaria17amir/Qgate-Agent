@@ -10,19 +10,24 @@
   "ranked": [
    {
     "characteristic_id": "CH-24-TORQUE",
-    "reasoning": "ST-24 is the only station with out-of-tolerance measurements in the build record, and it directly measures the characteristics that produce fault code F-24.",
+    "reasoning": "ST-24 is directly implicated by the build record showing out-of-tolerance measurements at this station, and the battery install torque characteristic is measured here.",
+    "station_id": "ST-24"
+   },
+   {
+    "characteristic_id": "CH-24-VOLT",
+    "reasoning": "ST-24 is directly implicated by the build record showing out-of-tolerance measurements at this station, and the battery voltage characteristic is measured here.",
     "station_id": "ST-24"
    },
    {
     "characteristic_id": "CH-16-RES",
-    "reasoning": "ST-16 is not supported by the evidence as no out-of-tolerance measurements were recorded at this station, so the fault map's prior belief order is maintained.",
+    "reasoning": "ST-16 remains a secondary candidate per the fault map, but the build record shows no out-of-tolerance measurements at this station, making it less likely than ST-24.",
     "station_id": "ST-16"
    }
   ]
  },
  "prompt_id": "hypothesise",
  "usage": {
-  "completion_tokens": 183,
+  "completion_tokens": 257,
   "prompt_tokens": 956
  },
  "version": "1"

@@ -1,0 +1,22 @@
+{
+ "inputs": {
+  "evidence": "0 other vehicles with the same code; drift NONE (LOW); bench capable False",
+  "fault_codes": "F-04",
+  "kind": "SINGLE",
+  "scope": "this vehicle only",
+  "station_id": "ST-04",
+  "station_name": "Door hang left",
+  "vin": "SYN00000000000041",
+  "vin_count": 1
+ },
+ "model": "claude-haiku-4-5",
+ "output": {
+  "text": "CONTAINMENT ORDER - SINGLE\n\nHold vehicle SYN00000000000041 at ST-04 (Door hang left). This vehicle failed end-of-line test with code F-04 and must not proceed. No other vehicles show this code; drift is NONE (LOW); bench capable is False. Check door hang alignment and fastener torque first at the station before release."
+ },
+ "prompt_id": "compose",
+ "usage": {
+  "completion_tokens": 115,
+  "prompt_tokens": 806
+ },
+ "version": "1"
+}

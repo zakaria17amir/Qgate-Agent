@@ -11,11 +11,11 @@
  },
  "model": "claude-haiku-4-5",
  "output": {
-  "text": "CONTAINMENT ORDER - SINGLE\n\nHold vehicle SYN00000000000236 at ST-23 (Seat install). This vehicle failed end-of-line test with code F-23 and must not proceed to the next station. No other vehicles show the same defect code, drift is NONE (LOW), and the station is bench capable for repair.\n\nCheck the seat installation fit and fastener torque first at the station before any rework begins."
+  "text": "CONTAINMENT ORDER - SINGLE\n\nHold vehicle SYN00000000000236 at ST-23 (Seat install). This vehicle failed end-of-line test with code F-23 and no other vehicles show the same defect. Check the seat installation fit and fastener torque first at the station. Do not release this vehicle until the fault is resolved and verified."
  },
  "prompt_id": "compose",
  "usage": {
-  "completion_tokens": 131,
+  "completion_tokens": 113,
   "prompt_tokens": 806
  },
  "version": "1"

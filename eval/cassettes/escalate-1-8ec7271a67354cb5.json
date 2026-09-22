@@ -1,0 +1,19 @@
+{
+ "inputs": {
+  "bench": "capable=True",
+  "drift": "STEP MEDIUM",
+  "fault_codes": "F-18",
+  "siblings": 0,
+  "vin": "SYN00000000000706"
+ },
+ "model": "claude-haiku-4-5",
+ "output": {
+  "text": "Vehicle SYS00000000000706 (F-18) escalation contradicts standard protocol: despite zero correlated failures and confirmed bench capability (capable=True), the STEP MEDIUM station drift verdict alone cannot justify escalation without containment. This violates the requirement that escalations require either multiple failure correlations or demonstrated containment strategy. A human should first review the station drift data and F-18 fault code root cause to determine if STEP MEDIUM severity warrants the exception."
+ },
+ "prompt_id": "escalate",
+ "usage": {
+  "completion_tokens": 135,
+  "prompt_tokens": 759
+ },
+ "version": "1"
+}

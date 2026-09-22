@@ -88,6 +88,7 @@ def find_correlated_failures(
         fault_code=fault_code,
         station_id=station_id,
         vins=[r[0] for r in rows],
+        entered_at=[r[3] for r in rows],
         by_shift=dict(by_shift),
         by_lot=dict(by_lot),
     )

@@ -37,8 +37,6 @@ data/
 !eval/goldens/**/*.csv
 
 # runtime
-eval/report.md
-eval/metrics.json
 *.log
 
 # ide / os

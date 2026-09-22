@@ -1,0 +1,19 @@
+{
+ "inputs": {
+  "bench": "capable=True",
+  "drift": "STEP MEDIUM",
+  "fault_codes": "F-18",
+  "siblings": 0,
+  "vin": "SYN00000000000701"
+ },
+ "model": "claude-haiku-4-5",
+ "output": {
+  "text": "Vehicle SYN00000000000701 (F-18) escalation lacks containment despite bench capability being available. The contradiction: Station drift is STEP MEDIUM (suggesting process instability), yet zero correlated failures indicate an isolated event, not a systemic issue. With capable=True, containment should be feasible. This inconsistency requires investigation. A human should first examine the station drift root cause and verify whether F-18 is truly isolated or if correlation detection failed."
+ },
+ "prompt_id": "escalate",
+ "usage": {
+  "completion_tokens": 134,
+  "prompt_tokens": 759
+ },
+ "version": "1"
+}
