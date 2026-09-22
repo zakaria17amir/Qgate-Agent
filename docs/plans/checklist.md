@@ -118,39 +118,39 @@ Order is strict here: api endpoints before the gate, gate before commit, cassett
 
 ### 3.1 api first (the agent depends on it)
 
-- [ ] **[F]** `qgate_core/auth.py`: HS256 JWT, `Role` enum, FastAPI dependency; `make token` CLI → api, console, harness
-- [ ] **[F]** `qgate_api`: `/internal/containments` POST/PATCH (agent-facing, `service` role), containment + audit writes on `API_RW`, `quality.containment` producer → `submit_for_approval`, `report`
-- [ ] **[F]** `qgate_api`: `GET /containments`, `GET /containments/{id}`, `GET /audit` → console, harness
-- [ ] **[F]** Contract tests: `schemathesis` against api OpenAPI → `make contract`
+- [x] **[F]** `qgate_core/auth.py`: HS256 JWT, `Role` enum, FastAPI dependency; `make token` CLI → api, console, harness
+- [x] **[F]** `qgate_api`: `/internal/containments` POST/PATCH (agent-facing, `service` role), containment + audit writes on `API_RW`, `quality.containment` producer → `submit_for_approval`, `report`
+- [x] **[F]** `qgate_api`: `GET /containments`, `GET /containments/{id}`, `GET /audit` → console, harness
+- [x] **[F]** Contract tests: `schemathesis` against api OpenAPI → `make contract`
 
 ### 3.2 Graph, deterministic nodes first
 
-- [ ] **[F]** `qgate_agent/state.py` `TriageState`, `Bounds`, `HumanDecision` → all nodes
-- [ ] **[F]** Nodes with no LLM: `intake`, `genealogy`, `correlate`, `drift_check`, `route`, `bound`, `bench_alert`, `report` — unit-tested with fixture state → graph
-- [ ] **[F]** `qgate_agent/llm.py`: `init_chat_model` + `CassetteRunnable` (`live|record|replay`; replay-miss = hard failure) → LLM nodes, CI determinism
-- [ ] **[F]** `prompts/hypothesise.v1.md`, `prompts/compose.v1.md`, `prompts/escalate.v1.md` with front-matter `id`/`version` → cassette keys
-- [ ] **[F]** LLM nodes: `hypothesise` (structured `list[Hypothesis]`, validator rejects stations not in fault map), `compose` (validator: bounds quoted verbatim), `escalate` → graph
-- [ ] **[F]** `graph.py`: nodes + conditional edges + `PostgresSaver` on `CHECKPOINT_RW`; `.setup()` on start → gate
+- [x] **[F]** `qgate_agent/state.py` `TriageState`, `Bounds`, `HumanDecision` → all nodes
+- [x] **[F]** Nodes with no LLM: `intake`, `genealogy`, `correlate`, `drift_check`, `route`, `bound`, `bench_alert`, `report` — unit-tested with fixture state → graph
+- [x] **[F]** `qgate_agent/llm.py`: `init_chat_model` + `CassetteRunnable` (`live|record|replay`; replay-miss = hard failure) → LLM nodes, CI determinism
+- [x] **[F]** `prompts/hypothesise.v1.md`, `prompts/compose.v1.md`, `prompts/escalate.v1.md` with front-matter `id`/`version` → cassette keys
+- [x] **[F]** LLM nodes: `hypothesise` (structured `list[Hypothesis]`, validator rejects stations not in fault map), `compose` (validator: bounds quoted verbatim), `escalate` → graph
+- [x] **[F]** `graph.py`: nodes + conditional edges + `PostgresSaver` on `CHECKPOINT_RW`; `.setup()` on start → gate
 
 ### 3.3 Gate and commit
 
-- [ ] **[F]** `gate` node: `submit_for_approval` → `api POST /internal/containments` → `interrupt(payload)` → the design's one sentence
-- [ ] **[F]** `commit` node: `mock-mes POST /v1/holds` with `Idempotency-Key = containment_id` → `api PATCH … COMMITTED` → audit
-- [ ] **[F]** `qgate_agent/http.py`: `POST /triage`, `GET /threads/{id}`, `POST /threads/{id}/resume` → api decision endpoints
-- [ ] **[F]** `qgate_agent/consumer.py`: group `agent-triage` on `line.eol.results`, `FAIL` only, starts a thread with `eol_ts` → event-driven trigger (ADR-007)
-- [ ] **[F]** `qgate_api`: `POST /containments/{id}/approve|amend|reject` → update row, compute diff, emit event, call agent resume → human path
-- [ ] **[F]** `qgate_api`: expiry sweeper (`expires_at`, `APPROVAL_TIMEOUT_S`) → `EXPIRED` + `ESCALATED` event + resume with REJECT → no auto-approve, ever
-- [ ] **[F]** `report` node fills `latency_total/llm/non_llm`, tokens, `cost_usd` (`qgate_core/pricing.py`, labelled assumptions) → metrics table
-- [ ] **[F]** ADR-007 event-driven + HTTP resume, ADR-008 api owns containment state
-- [ ] **[F]** Restart-mid-gate integration test: run to `WAITING_GATE`, restart agent container, resume, assert one row + one hold → **the** HITL claim
+- [x] **[F]** `gate` node: `submit_for_approval` → `api POST /internal/containments` → `interrupt(payload)` → the design's one sentence
+- [x] **[F]** `commit` node: `mock-mes POST /v1/holds` with `Idempotency-Key = containment_id` → `api PATCH … COMMITTED` → audit
+- [x] **[F]** `qgate_agent/http.py`: `POST /triage`, `GET /threads/{id}`, `POST /threads/{id}/resume` → api decision endpoints
+- [x] **[F]** `qgate_agent/consumer.py`: group `agent-triage` on `line.eol.results`, `FAIL` only, starts a thread with `eol_ts` → event-driven trigger (ADR-007)
+- [x] **[F]** `qgate_api`: `POST /containments/{id}/approve|amend|reject` → update row, compute diff, emit event, call agent resume → human path
+- [x] **[F]** `qgate_api`: expiry sweeper (`expires_at`, `APPROVAL_TIMEOUT_S`) → `EXPIRED` + `ESCALATED` event + resume with REJECT → no auto-approve, ever
+- [x] **[F]** `report` node fills `latency_total/llm/non_llm`, tokens, `cost_usd` (`qgate_core/pricing.py`, labelled assumptions) → metrics table
+- [x] **[F]** ADR-007 event-driven + HTTP resume, ADR-008 api owns containment state
+- [x] **[F]** Restart-mid-gate integration test: run to `WAITING_GATE`, restart agent container, resume, assert one row + one hold → **the** HITL claim
 
 ### 3.4 Evaluation harness
 
-- [ ] **[F]** `qgate_eval`: runner (replay scenario → trigger → poll → act as human per golden → collect audit), scorers (escapes, precision, recall, decision match, bound tolerance, abstention correctness), Rich table + `report.md` → numbers
-- [ ] **[F]** `LLM_MODE=record` over all 50 goldens → commits `eval/cassettes/` (synthetic VINs only) → deterministic CI
-- [ ] **[F]** First `replay` run → writes `eval/baseline.json` (with `goldens_tag`, `cassette_set`) → CI gate has a reference
-- [ ] **[F]** `make eval-replay` compares to baseline; fails on escapes ↑ or non-LLM p95 ↑ > 20 % → `eval-replay` job is a real gate
-- [ ] **[G]** **Gate 3:** failure event → proposal; approve/amend via `curl`; amendment recorded with diff; kill agent mid-gate loses nothing; CI green with eval gate active
+- [x] **[F]** `qgate_eval`: runner (replay scenario → trigger → poll → act as human per golden → collect audit), scorers (escapes, precision, recall, decision match, bound tolerance, abstention correctness), Rich table + `report.md` → numbers
+- [x] **[F]** `LLM_MODE=record` over all 50 goldens → commits `eval/cassettes/` (synthetic VINs only) → deterministic CI
+- [x] **[F]** First `replay` run → writes `eval/baseline.json` (with `goldens_tag`, `cassette_set`) → CI gate has a reference
+- [x] **[F]** `make eval-replay` compares to baseline; fails on escapes ↑ or non-LLM p95 ↑ > 20 % → `eval-replay` job is a real gate
+- [x] **[G]** **Gate 3** (curl approve on compose → HOLD-000001; restart mid-gate test; replay baseline)**:** failure event → proposal; approve/amend via `curl`; amendment recorded with diff; kill agent mid-gate loses nothing; CI green with eval gate active
 
 ---
 

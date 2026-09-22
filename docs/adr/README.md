@@ -10,7 +10,7 @@ One page per decision. Never edited after acceptance; a changed decision is a ne
 | [004](0004-sql-correlates-model-explains.md) | SQL correlates and bounds; the model orchestrates and explains | Accepted |
 | [005](0005-monorepo-uv-workspace.md) | Monorepo with uv workspace | Accepted |
 | [006](0006-provider-agnostic-llm-cassettes.md) | Provider-agnostic LLM with cassette record/replay | Accepted |
-| 007 | Event-driven trigger, HTTP resume | Phase 3 |
-| 008 | `api` owns containment state; agent is read-only on Postgres | Phase 3 |
+| [007](0007-event-driven-trigger-http-resume.md) | Event-driven trigger, HTTP resume | Accepted |
+| [008](0008-api-owns-containment-state.md) | `api` owns containment state; agent is read-only on Postgres | Accepted |
 | [009](0009-detect-two-processes.md) | Two `detect` processes from one image | Accepted |
 | [010](0010-dbmate-sql-migrations.md) | dbmate SQL migrations over an ORM | Accepted |
