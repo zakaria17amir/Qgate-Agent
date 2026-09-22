@@ -75,7 +75,7 @@ endif
 
 # `|| [ $$? -eq 5 ]`: pytest exit 5 = no tests collected; tolerated until these layers have tests
 contract: ## schemathesis against api + mock-mes OpenAPI; Avro compatibility
-	uv run pytest -m contract || [ $$? -eq 5 ]
+	uv run pytest -m contract -p no:cacheprovider || [ $$? -eq 5 ]
 
 integration: ## testcontainers: Postgres + Redpanda end to end
 	uv run pytest -m "integration or slow" || [ $$? -eq 5 ]

@@ -2329,6 +2329,7 @@ dev = [
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "ruff" },
+    { name = "schemathesis" },
     { name = "testcontainers" },
     { name = "types-pyyaml" },
 ]
@@ -2345,6 +2346,7 @@ dev = [
     { name = "pytest-asyncio", specifier = ">=1.4,<2" },
     { name = "pytest-cov", specifier = ">=7.1,<8" },
     { name = "ruff", specifier = ">=0.16,<1" },
+    { name = "schemathesis", specifier = ">=4.27,<5" },
     { name = "testcontainers", specifier = ">=4.15,<5" },
     { name = "types-pyyaml", specifier = ">=6,<7" },
 ]
@@ -2361,11 +2363,6 @@ dependencies = [
     { name = "uvicorn", extra = ["standard"] },
 ]
 
-[package.dev-dependencies]
-test = [
-    { name = "schemathesis" },
-]
-
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.141,<1" },
@@ -2374,9 +2371,6 @@ requires-dist = [
     { name = "typer", specifier = ">=0.27,<1" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.53,<1" },
 ]
-
-[package.metadata.requires-dev]
-test = [{ name = "schemathesis", specifier = ">=4.27,<5" }]
 
 [[package]]
 name = "qgate-core"
@@ -2513,12 +2507,8 @@ dependencies = [
     { name = "fastapi" },
     { name = "prometheus-client" },
     { name = "pydantic" },
+    { name = "pyyaml" },
     { name = "uvicorn", extra = ["standard"] },
-]
-
-[package.dev-dependencies]
-test = [
-    { name = "schemathesis" },
 ]
 
 [package.metadata]
@@ -2526,11 +2516,9 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.141,<1" },
     { name = "prometheus-client", specifier = ">=0.26,<1" },
     { name = "pydantic", specifier = ">=2.13,<3" },
+    { name = "pyyaml", specifier = ">=6,<7" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.53,<1" },
 ]
-
-[package.metadata.requires-dev]
-test = [{ name = "schemathesis", specifier = ">=4.27,<5" }]
 
 [[package]]
 name = "qgate-pipelines"

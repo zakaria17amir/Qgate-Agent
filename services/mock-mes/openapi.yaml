@@ -32,6 +32,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Hold" }
+        "400":
+          description: Body is not parseable JSON
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "409":
           description: Same Idempotency-Key with a different body
@@ -62,6 +67,9 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404":
           description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
   /health:
     get:
       operationId: health
@@ -79,11 +87,23 @@ paths:
             schema: { $ref: "#/components/schemas/ChaosRequest" }
       responses:
         "204": { description: Applied }
+        "400":
+          description: Body is not parseable JSON
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { description: Chaos disabled }
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
   /_stats:
     get:
       operationId: getStats
       responses:
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "200":
           description: Counters used by chaos assertions
           content:
@@ -112,8 +132,10 @@ components:
       properties:
         external_ref: { type: string, description: containment_id from qgate }
         station_id: { type: [string, "null"] }
-        window_start: { type: [string, "null"], format: date-time }
-        window_end: { type: [string, "null"], format: date-time }
+        window_start:
+          oneOf: [{ type: string, format: date-time }, { type: "null" }]
+        window_end:
+          oneOf: [{ type: string, format: date-time }, { type: "null" }]
         lot_ids: { type: array, items: { type: string }, default: [] }
         vins: { type: array, items: { type: string }, minItems: 1 }
         reason: { type: string, minLength: 1, maxLength: 2000 }
@@ -142,4 +164,9 @@ components:
       type: object
       required: [detail]
       properties:
-        detail: { type: string }
+        detail:
+          description: A message, or for validation errors a list of field-level problems
+          oneOf:
+            - type: string
+            - type: array
+              items: { type: object }

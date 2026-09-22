@@ -8,13 +8,11 @@ dependencies = [
     "uvicorn[standard]>=0.53,<1",
     "pydantic>=2.13,<3",
     "prometheus-client>=0.26,<1",
+    "pyyaml>=6,<7",
 ]
 
 [project.scripts]
 mock-mes = "qgate_mock_mes.main:main"
-
-[dependency-groups]
-test = ["schemathesis>=4.27,<5"]
 
 [build-system]
 requires = ["hatchling"]
