@@ -45,15 +45,22 @@ def main() -> None:
     logging.basicConfig(level="INFO")
     s = AgentSettings()
     service_token = mint("agent", Role.SERVICE, s.jwt_secret)
+    blips = httpx.HTTPTransport(retries=3)  # connect-level retries; 5xx policy lives in tools.mes
     deps_kwargs = dict(
         ro=ConnectionPool(s.database_url_agent_ro, min_size=1, max_size=4, open=True),
-        detect=httpx.Client(base_url=s.detect_base_url, timeout=30),
+        detect=httpx.Client(base_url=s.detect_base_url, timeout=30, transport=blips),
         api=httpx.Client(
             base_url=s.api_base_url,
             timeout=10,
             headers={"Authorization": f"Bearer {service_token}"},
+            transport=blips,
         ),
-        mes=httpx.Client(base_url=s.mes_base_url, timeout=10, headers={"X-API-Key": s.mes_api_key}),
+        mes=httpx.Client(
+            base_url=s.mes_base_url,
+            timeout=10,
+            headers={"X-API-Key": s.mes_api_key},
+            transport=blips,
+        ),
         ask=Ask(
             s.llm_mode, s.cassette_dir, LangChainModel(s.llm_model, s.llm_provider, s.llm_api_key)
         ),
