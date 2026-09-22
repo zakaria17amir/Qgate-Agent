@@ -244,7 +244,7 @@ def build_app(
                 if (full := store.get(conn, r["containment_id"])) is not None
             ]
             parked = store.list_by_state(conn, "COMMIT_PENDING")
-        for row in decided:
+        for row in decided:  # REJECTED and EXPIRED both close the gate with a REJECT
             action = {"APPROVED": "APPROVE", "AMENDED": "AMEND"}.get(row["state"], "REJECT")
             human_resume(row, action, row["decided_by"] or "system", None)
         for row in parked:
