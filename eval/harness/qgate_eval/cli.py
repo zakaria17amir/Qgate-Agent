@@ -40,6 +40,8 @@ def run(
     from qgate_eval.golden import load_all
     from qgate_eval.scoring import score, summarise
 
+    if mode not in ("replay", "live", "record"):
+        raise typer.BadParameter("mode must be replay, live or record")
     cases = load_all(goldens)
     if only:
         cases = [c for c in cases if c.id == only]
@@ -52,7 +54,7 @@ def run(
         from qgate_eval.runner import run_golden
         from qgate_eval.stack import Stack
 
-        stack = Stack(url, model, mode, cassettes)
+        stack = Stack(url, model, mode, cassettes)  # type: ignore[arg-type]  # validated below
         try:
             scores = []
             for g in cases:

@@ -14,7 +14,7 @@ from psycopg_pool import ConnectionPool
 from qgate_agent.checkpoint import saver
 from qgate_agent.graph import build_graph
 from qgate_agent.http import build_http
-from qgate_agent.llm import Ask, StructuredModel
+from qgate_agent.llm import Ask, Mode, StructuredModel
 from qgate_agent.nodes import Deps
 from qgate_api.main import ApiSettings
 from qgate_api.main import build_app as build_api
@@ -39,7 +39,7 @@ class _LazyAgent:
 
 
 class Stack:
-    def __init__(self, pg_url: str, model: StructuredModel, mode: str, cassette_dir: Path) -> None:
+    def __init__(self, pg_url: str, model: StructuredModel, mode: Mode, cassette_dir: Path) -> None:
         self.pg_url, self.model, self.mode, self.cassette_dir = pg_url, model, mode, cassette_dir
         settings = Settings(database_url=pg_url)
         self.mes = TestClient(
@@ -67,7 +67,7 @@ class Stack:
                 headers={"Authorization": f"Bearer {mint('agent', Role.SERVICE, SECRET)}"},
             ),
             mes=self.mes,
-            ask=Ask(self.mode, self.cassette_dir, self.model),  # type: ignore[arg-type]
+            ask=Ask(self.mode, self.cassette_dir, self.model),
             fault_map=self.fault_map,
         )
         self.agent = TestClient(build_http(build_graph(deps, self.saver), run_in_thread=False))
