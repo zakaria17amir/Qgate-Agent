@@ -1,20 +1,23 @@
-import typer
-from fastapi import FastAPI
+"""``detect api`` serves drift/bench queries; ``detect worker`` streams SPC rule alerts."""
 
-from qgate_core.health import health_app, serve
+import logging
+
+import typer
+
+from qgate_core.health import serve
+from qgate_core.settings import Settings
+from qgate_detect import worker as worker_mod
+from qgate_detect.api import build_api
 
 app = typer.Typer(add_completion=False)
 
 
-def build_app(role: str) -> FastAPI:
-    return health_app(f"detect-{role}")
-
-
 @app.command()
 def api() -> None:
-    serve(build_app("api"))
+    logging.basicConfig(level="INFO")
+    serve(build_api(Settings()))
 
 
 @app.command()
 def worker() -> None:
-    serve(build_app("worker"))
+    worker_mod.main()

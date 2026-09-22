@@ -53,7 +53,7 @@ def detect_change(dev: NDArray[np.floating]) -> DriftVerdict:
     z = (dev - float(np.mean(base))) / sigma
 
     bkps = rpt.KernelCPD(kernel="linear", min_size=10).fit(z).predict(pen=3 * math.log(n))
-    change = next((b for b in bkps if b < n), None)
+    change = next((int(b) for b in bkps if b < n), None)
     if change is None:
         return DriftVerdict(Verdict.NONE, evidence={"n": n})
 
