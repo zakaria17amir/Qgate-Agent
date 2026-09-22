@@ -11,11 +11,11 @@
  },
  "model": "claude-haiku-4-5",
  "output": {
-  "text": "CONTAINMENT ORDER - LOT HOLD\n\nHold 250 vehicles from lot L-24-0004 at station ST-24 (Battery install). Vehicle SYN00000000001100 failed end-of-line test with code F-24; 112 other vehicles carry the same code, indicating a systemic battery installation defect. Hold this lot to prevent defective units from reaching customers. Check battery connector seating and torque specifications first at ST-24 before releasing any vehicles."
+  "text": "CONTAINMENT ORDER - LOT HOLD\n\nHold 250 vehicles from lot L-24-0004 at station ST-24 (Battery install). Vehicle SYN00000000001100 failed end-of-line test with fault code F-24; 112 other vehicles carry the same code, indicating a systemic defect in battery installation at this station. Hold this lot to prevent defective units from reaching customers. First, inspect the battery installation fixture and torque verification system at ST-24 for mechanical wear, calibration drift, or sensor malfunction. Bench testing is available for validation. Do not release vehicles until root cause is confirmed and corrective action is verified."
  },
  "prompt_id": "compose",
  "usage": {
-  "completion_tokens": 139,
+  "completion_tokens": 178,
   "prompt_tokens": 809
  },
  "version": "1"

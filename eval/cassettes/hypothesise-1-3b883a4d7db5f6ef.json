@@ -10,19 +10,19 @@
   "ranked": [
    {
     "characteristic_id": "CH-30-HEADLAMP",
-    "reasoning": "ST-30 had out-of-tolerance measurements in the build record and is where the headlamp characteristic is directly measured at end-of-line test.",
+    "reasoning": "ST-30 had out-of-tolerance measurements and is where the headlamp characteristic is directly measured at end-of-line test, making it the most likely source of fault F-30.",
     "station_id": "ST-30"
    },
    {
     "characteristic_id": "CH-29-TOE",
-    "reasoning": "ST-29 wheel alignment error can present as headlamp aim issues at EOL, but no out-of-tolerance evidence was recorded at this station.",
+    "reasoning": "ST-29 is less likely since the build record shows no out-of-tolerance measurements at this station, despite wheel alignment errors potentially presenting as headlamp aim issues.",
     "station_id": "ST-29"
    }
   ]
  },
  "prompt_id": "hypothesise",
  "usage": {
-  "completion_tokens": 182,
+  "completion_tokens": 193,
   "prompt_tokens": 971
  },
  "version": "1"

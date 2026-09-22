@@ -10,19 +10,19 @@
   "ranked": [
    {
     "characteristic_id": "CH-04-GAP",
-    "reasoning": "ST-04 had an out-of-tolerance measurement in the build record, directly matching where door hang left characteristics are measured, making it the most likely source of fault F-04.",
+    "reasoning": "ST-04 is where door hang left is measured and the vehicle's build record shows a measurement out of tolerance at this station, directly supporting this as the fault source.",
     "station_id": "ST-04"
    },
    {
     "characteristic_id": "CH-03-GAP",
-    "reasoning": "ST-03 is not supported by the evidence as no out-of-tolerance measurements were recorded at this station, despite its potential to indirectly affect door aperture geometry.",
+    "reasoning": "ST-03 could indirectly cause the fault through roof geometry error affecting door aperture, but the build record shows no out-of-tolerance measurements at this station.",
     "station_id": "ST-03"
    }
   ]
  },
  "prompt_id": "hypothesise",
  "usage": {
-  "completion_tokens": 189,
+  "completion_tokens": 184,
   "prompt_tokens": 952
  },
  "version": "1"

@@ -7,10 +7,10 @@
  "agreement_rate": 0.66,
  "abstention_correct_rate": 1.0,
  "latency_p50_ms": 106,
- "latency_p95_ms": 113,
- "latency_llm_p95_ms": 1,
- "latency_non_llm_p95_ms": 113,
- "cost_per_triage_usd": 0.003289,
+ "latency_p95_ms": 128,
+ "latency_llm_p95_ms": 2,
+ "latency_non_llm_p95_ms": 127,
+ "cost_per_triage_usd": 0.003293,
  "by_family": {
   "bench": {
    "cases": 8,
@@ -20,11 +20,11 @@
    "decision_match": 1.0,
    "agreement_rate": 0.0,
    "abstention_correct_rate": 1.0,
-   "latency_p50_ms": 105,
-   "latency_p95_ms": 125,
-   "latency_llm_p95_ms": 0,
-   "latency_non_llm_p95_ms": 125,
-   "cost_per_triage_usd": 0.001894
+   "latency_p50_ms": 108,
+   "latency_p95_ms": 143,
+   "latency_llm_p95_ms": 10,
+   "latency_non_llm_p95_ms": 133,
+   "cost_per_triage_usd": 0.00191
   },
   "contradictory": {
    "cases": 6,
@@ -34,11 +34,11 @@
    "decision_match": 1.0,
    "agreement_rate": 0.0,
    "abstention_correct_rate": 1.0,
-   "latency_p50_ms": 93,
-   "latency_p95_ms": 104,
-   "latency_llm_p95_ms": 1,
-   "latency_non_llm_p95_ms": 103,
-   "cost_per_triage_usd": 0.00328
+   "latency_p50_ms": 101,
+   "latency_p95_ms": 105,
+   "latency_llm_p95_ms": 2,
+   "latency_non_llm_p95_ms": 104,
+   "cost_per_triage_usd": 0.003265
   },
   "drift": {
    "cases": 12,
@@ -48,11 +48,11 @@
    "decision_match": 1.0,
    "agreement_rate": 0.8333,
    "abstention_correct_rate": null,
-   "latency_p50_ms": 108,
-   "latency_p95_ms": 111,
+   "latency_p50_ms": 115,
+   "latency_p95_ms": 128,
    "latency_llm_p95_ms": 1,
-   "latency_non_llm_p95_ms": 110,
-   "cost_per_triage_usd": 0.00359
+   "latency_non_llm_p95_ms": 127,
+   "cost_per_triage_usd": 0.003576
   },
   "isolated": {
    "cases": 12,
@@ -62,11 +62,11 @@
    "decision_match": 1.0,
    "agreement_rate": 1.0,
    "abstention_correct_rate": null,
-   "latency_p50_ms": 95,
+   "latency_p50_ms": 98,
    "latency_p95_ms": 100,
-   "latency_llm_p95_ms": 1,
+   "latency_llm_p95_ms": 2,
    "latency_non_llm_p95_ms": 99,
-   "cost_per_triage_usd": 0.003442
+   "cost_per_triage_usd": 0.003424
   },
   "lot": {
    "cases": 8,
@@ -76,11 +76,11 @@
    "decision_match": 1.0,
    "agreement_rate": 0.875,
    "abstention_correct_rate": null,
-   "latency_p50_ms": 109,
-   "latency_p95_ms": 112,
-   "latency_llm_p95_ms": 1,
-   "latency_non_llm_p95_ms": 111,
-   "cost_per_triage_usd": 0.003701
+   "latency_p50_ms": 107,
+   "latency_p95_ms": 109,
+   "latency_llm_p95_ms": 2,
+   "latency_non_llm_p95_ms": 108,
+   "cost_per_triage_usd": 0.003651
   },
   "overlap": {
    "cases": 4,
@@ -90,14 +90,14 @@
    "decision_match": 0.5,
    "agreement_rate": 1.0,
    "abstention_correct_rate": null,
-   "latency_p50_ms": 112,
-   "latency_p95_ms": 115,
+   "latency_p50_ms": 111,
+   "latency_p95_ms": 113,
    "latency_llm_p95_ms": 1,
-   "latency_non_llm_p95_ms": 114,
-   "cost_per_triage_usd": 0.003903
+   "latency_non_llm_p95_ms": 112,
+   "cost_per_triage_usd": 0.004145
   }
  },
  "mode": "replay",
  "model": "claude-haiku-4-5",
- "recorded_at": "2026-09-22T14:53:56.537358+00:00"
+ "recorded_at": "2026-09-22T15:48:03.522548+00:00"
 }

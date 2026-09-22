@@ -8,11 +8,11 @@
  },
  "model": "claude-haiku-4-5",
  "output": {
-  "text": "Vehicle SYS00000000000704 (F-18) escalation contradicts standard triage protocol: zero correlated failures and capable bench testing capability suggest containment is feasible, yet STEP MEDIUM station drift verdict alone drives escalation without a containment proposal. This inverts normal risk logic. A human should first review whether the station drift verdict's severity justification actually warrants bypassing containment assessment given the absence of systemic correlation."
+  "text": "Vehicle SYS00000000000704 (F-18) escalation contradicts standard triage protocol: zero correlated failures and capable bench resources suggest containment is feasible, yet STEP MEDIUM station drift indicates potential systemic risk. This contradiction\u2014low failure correlation paired with medium drift severity\u2014warrants escalation without containment to preserve investigation scope. A human should first examine the station drift root cause and its relationship to F-18 manifestation."
  },
  "prompt_id": "escalate",
  "usage": {
-  "completion_tokens": 126,
+  "completion_tokens": 128,
   "prompt_tokens": 759
  },
  "version": "1"

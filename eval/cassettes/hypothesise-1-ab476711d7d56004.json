@@ -15,14 +15,14 @@
    },
    {
     "characteristic_id": "CH-17-TORQUE",
-    "reasoning": "ST-17 sets the column bracket position which affects torque measurement, but had no out-of-tolerance measurements recorded in this vehicle's build history.",
+    "reasoning": "ST-17 sets the column bracket position which affects torque measurement, but no out-of-tolerance measurements were recorded at this station in the build record.",
     "station_id": "ST-17"
    }
   ]
  },
  "prompt_id": "hypothesise",
  "usage": {
-  "completion_tokens": 188,
+  "completion_tokens": 189,
   "prompt_tokens": 956
  },
  "version": "1"

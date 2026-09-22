@@ -8,11 +8,11 @@
  },
  "model": "claude-haiku-4-5",
  "output": {
-  "text": "Vehicle SYS00000000000705 (F-18) escalation contradicts standard protocol: bench capability is confirmed capable=True, yet triage proceeds without containment despite only one correlated failure and STEP MEDIUM station drift. This violates the requirement that capable benches must propose containment before escalation. A human should first review the bench capability assessment and determine why containment was bypassed despite the system's confirmed readiness."
+  "text": "Vehicle SYS00000000000705 (F-18) escalation contradicts standard protocol: bench capability is confirmed capable=True, yet triage proceeds without containment despite only one correlated failure and STEP MEDIUM station drift verdict. This combination suggests the fault is isolatable and containable, yet no containment proposal accompanies escalation. A human should first review the engineering decision log to understand why containment was bypassed despite favorable containment conditions."
  },
  "prompt_id": "escalate",
  "usage": {
-  "completion_tokens": 124,
+  "completion_tokens": 128,
   "prompt_tokens": 759
  },
  "version": "1"

@@ -11,11 +11,11 @@
  },
  "model": "claude-haiku-4-5",
  "output": {
-  "text": "CONTAINMENT ORDER - LOT HOLD\n\nStation ST-24 (Battery install) is under LOT containment effective immediately. Hold all 250 vehicles in lot L-24-0004. Vehicle SYN00000000000324 failed end-of-line test with code F-24; 40 other vehicles show the same failure code, indicating a systemic issue at this station. Hold this lot because a repeating defect pattern has been detected that requires investigation and corrective action before release. Check battery connection torque and polarity verification first at ST-24. Do not release vehicles until root cause is confirmed and containment is lifted by Quality."
+  "text": "CONTAINMENT ORDER - LOT HOLD\n\nStation: ST-24 (Battery install)\nLot: L-24-0004\nHold quantity: 250 vehicles\n\nHOLD all vehicles in lot L-24-0004 immediately. Vehicle SYN00000000000324 failed end-of-line test with fault code F-24; 40 additional vehicles show the same code, indicating a systemic issue at this station. Check battery installation torque and connector seating first, then verify all test equipment calibration at ST-24 before releasing any vehicles."
  },
  "prompt_id": "compose",
  "usage": {
-  "completion_tokens": 172,
+  "completion_tokens": 156,
   "prompt_tokens": 809
  },
  "version": "1"

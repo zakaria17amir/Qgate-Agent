@@ -11,11 +11,11 @@
  },
  "model": "claude-haiku-4-5",
  "output": {
-  "text": "CONTAINMENT ORDER - SINGLE\n\nHold vehicle SYN00000000000610 immediately. This vehicle failed end-of-line test with code F-27 at ST-27 (Glass bonding) and must not proceed to the next station. No other vehicles show the same defect code; drift is NONE (LOW) and the bench is capable of repair.\n\nCheck the glass bonding adhesive application and cure integrity at ST-27 first. Inspect for incomplete bonds, voids, or improper bead placement on all window perimeters. Do not release this vehicle until the defect is corrected and verified."
+  "text": "CONTAINMENT ORDER - SINGLE\n\nHold vehicle SYN00000000000610 immediately. This vehicle failed end-of-line test with code F-27 at ST-27 (Glass bonding) and must not proceed to the next station. No other vehicles show the same defect code, drift is NONE (LOW), and the station is bench capable for repair.\n\nCheck the glass bonding adhesive application and cure integrity first at ST-27 before any rework is authorized."
  },
  "prompt_id": "compose",
  "usage": {
-  "completion_tokens": 167,
+  "completion_tokens": 137,
   "prompt_tokens": 806
  },
  "version": "1"

@@ -11,11 +11,11 @@
  },
  "model": "claude-haiku-4-5",
  "output": {
-  "text": "CONTAINMENT ORDER - SINGLE\n\nHold vehicle SYN00000000000219 immediately. This vehicle failed end-of-line test with code F-29 and must not proceed to the next station. No other vehicles show the same defect code, drift is LOW, and bench capability is confirmed.\n\nStation ST-29 (Wheel alignment) is responsible for this hold. Check wheel alignment settings and sensor calibration first. Do not release this vehicle until the F-29 condition is resolved and verified by quality."
+  "text": "CONTAINMENT ORDER - SINGLE\n\nHold vehicle SYN00000000000219 immediately. This vehicle failed end-of-line test with fault code F-29 and must not proceed to the next station. No other vehicles carry this code; drift is NONE (LOW) and bench is capable True.\n\nStation ST-29 (Wheel alignment) is the source. Check wheel alignment settings and sensor calibration first. Inspect for mechanical drift or sensor malfunction. Do not release until F-29 is resolved and vehicle passes retest."
  },
  "prompt_id": "compose",
  "usage": {
-  "completion_tokens": 142,
+  "completion_tokens": 148,
   "prompt_tokens": 806
  },
  "version": "1"

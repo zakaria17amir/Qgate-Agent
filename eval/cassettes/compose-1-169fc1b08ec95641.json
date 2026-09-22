@@ -11,11 +11,11 @@
  },
  "model": "claude-haiku-4-5",
  "output": {
-  "text": "CONTAINMENT ORDER - SINGLE\n\nHold vehicle SYN00000000000026 at ST-14 (Base coat). This vehicle failed end-of-line test with code F-14 and no other vehicles show the same defect. Check the base coat application equipment for drift or calibration issues before releasing this vehicle."
+  "text": "CONTAINMENT ORDER - SINGLE\n\nHold vehicle SYN00000000000026 at ST-14 (Base coat). This vehicle failed end-of-line test with code F-14 and no other vehicles show the same defect. Check the base coat application equipment for calibration and spray pattern consistency before releasing this vehicle or processing the next unit."
  },
  "prompt_id": "compose",
  "usage": {
-  "completion_tokens": 101,
+  "completion_tokens": 107,
   "prompt_tokens": 805
  },
  "version": "1"

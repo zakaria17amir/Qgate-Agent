@@ -10,24 +10,24 @@
   "ranked": [
    {
     "characteristic_id": "CH-24-TORQUE",
-    "reasoning": "ST-24 is directly implicated by the build record showing out-of-tolerance measurements at this station, and the battery install torque characteristic is measured here.",
+    "reasoning": "ST-24 had out-of-tolerance measurements in the build record and is the primary station where battery install characteristics are measured for fault F-24.",
     "station_id": "ST-24"
    },
    {
     "characteristic_id": "CH-24-VOLT",
-    "reasoning": "ST-24 is directly implicated by the build record showing out-of-tolerance measurements at this station, and the battery voltage characteristic is measured here.",
+    "reasoning": "ST-24 had out-of-tolerance measurements in the build record and voltage is a key characteristic measured at this battery install station.",
     "station_id": "ST-24"
    },
    {
     "characteristic_id": "CH-16-RES",
-    "reasoning": "ST-16 remains a secondary candidate per the fault map, but the build record shows no out-of-tolerance measurements at this station, making it less likely than ST-24.",
+    "reasoning": "ST-16 is a secondary candidate where harness terminal fit could indirectly affect voltage readings, but no out-of-tolerance evidence was found at this station.",
     "station_id": "ST-16"
    }
   ]
  },
  "prompt_id": "hypothesise",
  "usage": {
-  "completion_tokens": 257,
+  "completion_tokens": 248,
   "prompt_tokens": 956
  },
  "version": "1"

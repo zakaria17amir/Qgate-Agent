@@ -8,11 +8,11 @@
  },
  "model": "claude-haiku-4-5",
  "output": {
-  "text": "Vehicle SYN00000000000711 (F-18) escalation contradicts standard triage protocol: zero correlated failures and capable bench resources suggest containment is feasible, yet escalation proceeds without a containment proposal. The STEP MEDIUM station drift verdict indicates moderate concern, but with no systemic pattern (0 correlated failures) and full bench capability, this should enable local resolution rather than escalation. A human should first review the station drift root cause and bench test results to determine if containment is actually infeasible."
+  "text": "Vehicle SYN00000000000711 (F-18) escalation contradicts standard triage protocol: zero correlated failures and capable bench resources (capable=True) typically warrant containment before escalation, yet none is proposed. The STEP MEDIUM station drift verdict suggests process instability rather than isolated defect. A human should first review the bench capability assessment and determine why containment was bypassed despite adequate resources and lack of systemic correlation."
  },
  "prompt_id": "escalate",
  "usage": {
-  "completion_tokens": 145,
+  "completion_tokens": 126,
   "prompt_tokens": 759
  },
  "version": "1"

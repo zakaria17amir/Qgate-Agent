@@ -10,19 +10,24 @@
   "ranked": [
    {
     "characteristic_id": "CH-24-TORQUE",
-    "reasoning": "ST-24 has the highest prior probability (0.7) and the vehicle's build record shows an out-of-tolerance measurement at ST-24, directly supporting this station as the fault source.",
+    "reasoning": "ST-24 is directly implicated by the evidence showing out-of-tolerance measurements at this station, and the battery install characteristics measured here align with fault code F-24.",
+    "station_id": "ST-24"
+   },
+   {
+    "characteristic_id": "CH-24-VOLT",
+    "reasoning": "ST-24's voltage characteristic is also a candidate for F-24, and the out-of-tolerance evidence at this station supports this as a likely source.",
     "station_id": "ST-24"
    },
    {
     "characteristic_id": "CH-16-RES",
-    "reasoning": "ST-16 has a lower prior probability (0.3) and no out-of-tolerance measurements recorded at this station in the build record, making it less likely despite the potential indirect effect on voltage readings.",
+    "reasoning": "ST-16 remains a possible contributor despite no direct evidence, as harness terminal fit issues could indirectly affect voltage readings, but the out-of-tolerance measurement at ST-24 is more direct.",
     "station_id": "ST-16"
    }
   ]
  },
  "prompt_id": "hypothesise",
  "usage": {
-  "completion_tokens": 200,
+  "completion_tokens": 267,
   "prompt_tokens": 956
  },
  "version": "1"

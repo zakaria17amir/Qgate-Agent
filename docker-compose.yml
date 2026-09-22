@@ -167,12 +167,12 @@ services:
     environment:
       <<: *python-env
       PORT: "8001"
+      CASSETTE_DIR: /tmp/cassettes   # containers never write into the repo's recorded set
       DATABASE_URL_AGENT_RO: postgres://agent_ro:${POSTGRES_PASSWORD}@postgres:5432/qgate
       DATABASE_URL_CHECKPOINT_RW: postgres://checkpoint_rw:${POSTGRES_PASSWORD}@postgres:5432/qgate
     volumes:
       - ./knowledge:/knowledge:ro
       - ./schemas:/schemas:ro
-      - ./eval/cassettes:/workspace/eval/cassettes
     depends_on:
       redpanda: { condition: service_healthy }
       roles: { condition: service_completed_successfully }

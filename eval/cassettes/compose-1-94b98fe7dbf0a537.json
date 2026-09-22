@@ -11,11 +11,11 @@
  },
  "model": "claude-haiku-4-5",
  "output": {
-  "text": "CONTAINMENT ORDER - SINGLE\n\nHold vehicle SYN00000000000041 at ST-04 (Door hang left). This vehicle failed end-of-line test with code F-04 and must not proceed. No other vehicles show this code; drift is NONE (LOW); bench capable is False. Check door hang alignment and fastener torque first at the station before release."
+  "text": "CONTAINMENT ORDER - SINGLE\n\nHold vehicle SYN00000000000041 at ST-04 (Door hang left). This vehicle failed end-of-line test with code F-04 and must not proceed. No other vehicles show this code; drift is NONE (LOW); bench is not capable of repair.\n\nCheck door hang alignment and fastener torque first at the station before any further action."
  },
  "prompt_id": "compose",
  "usage": {
-  "completion_tokens": 115,
+  "completion_tokens": 120,
   "prompt_tokens": 806
  },
  "version": "1"

@@ -10,12 +10,12 @@
   "ranked": [
    {
     "characteristic_id": "CH-18-PRESSURE",
-    "reasoning": "ST-18 had an out-of-tolerance measurement on the brake pressure characteristic that directly produces fault code F-18, making it the most likely source.",
+    "reasoning": "ST-18 had an out-of-tolerance measurement in the build record, directly matching the station where brake pressure is measured for fault code F-18.",
     "station_id": "ST-18"
    },
    {
     "characteristic_id": "CH-16-RES",
-    "reasoning": "ST-16 remains a secondary candidate per the fault map, but no out-of-tolerance evidence was found at this station in the build record.",
+    "reasoning": "ST-16 is the secondary candidate per the fault map, but no out-of-tolerance measurements were recorded at this station in the build record.",
     "station_id": "ST-16"
    }
   ]

@@ -7,9 +7,9 @@
 | Decision match | 0.96 |
 | Agreement rate (approved unamended) | 0.66 |
 | Abstention correct rate | 1.00 |
-| Latency p50 / p95 (total) | 106 / 113 ms |
-| Latency p95 (LLM only / non-LLM) | 1 / 113 ms |
-| Cost per triage | 0.003289 USD (assumption) |
+| Latency p50 / p95 (total) | 106 / 128 ms |
+| Latency p95 (LLM only / non-LLM) | 2 / 127 ms |
+| Cost per triage | 0.003293 USD (assumption) |
 
 | Family | Cases | Escapes | Precision | Recall | Decision match |
 |---|---|---|---|---|---|

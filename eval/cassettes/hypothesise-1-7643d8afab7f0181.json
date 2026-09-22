@@ -10,19 +10,19 @@
   "ranked": [
    {
     "characteristic_id": "CH-17-TORQUE",
-    "reasoning": "ST-17 had out-of-tolerance measurements in the build record and directly measures the cockpit module characteristics that produce fault F-17.",
+    "reasoning": "ST-17 had out-of-tolerance measurements in the build record, directly matching where cockpit module characteristics are measured, making it the most likely source of fault F-17.",
     "station_id": "ST-17"
    },
    {
     "characteristic_id": "CH-09-GEOM",
-    "reasoning": "ST-09 is a secondary candidate since body geometry errors can manifest as cockpit gap issues, but no out-of-tolerance evidence was recorded at this station.",
+    "reasoning": "ST-09 was not flagged in the build record, and while body geometry errors can manifest as cockpit gap issues, the direct evidence points to ST-17 as the primary fault source.",
     "station_id": "ST-09"
    }
   ]
  },
  "prompt_id": "hypothesise",
  "usage": {
-  "completion_tokens": 179,
+  "completion_tokens": 194,
   "prompt_tokens": 955
  },
  "version": "1"

@@ -10,19 +10,19 @@
   "ranked": [
    {
     "characteristic_id": "CH-23-TORQUE",
-    "reasoning": "ST-23 is where CH-23-TORQUE is measured and the vehicle's build record shows an out-of-tolerance measurement at this station, directly supporting the fault origin.",
+    "reasoning": "ST-23 had an out-of-tolerance measurement in the build record and is where the seat install characteristic is directly measured, making it the most likely source of fault F-23.",
     "station_id": "ST-23"
    },
    {
     "characteristic_id": "CH-17-TORQUE",
-    "reasoning": "ST-17 can produce the fault codes through cockpit position shifts affecting the seat-rail datum, but no out-of-tolerance measurements were recorded at this station in the build record.",
+    "reasoning": "ST-17 had no out-of-tolerance measurements recorded, and while cockpit position can shift the seat-rail datum, the direct evidence points to ST-23 as the fault source.",
     "station_id": "ST-17"
    }
   ]
  },
  "prompt_id": "hypothesise",
  "usage": {
-  "completion_tokens": 193,
+  "completion_tokens": 195,
   "prompt_tokens": 955
  },
  "version": "1"

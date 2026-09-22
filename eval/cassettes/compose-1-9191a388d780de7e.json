@@ -11,11 +11,11 @@
  },
  "model": "claude-haiku-4-5",
  "output": {
-  "text": "CONTAINMENT ORDER - LOT HOLD\n\nStation: ST-24 (Battery install)\nLot: L-24-0004\nHold quantity: 250 vehicles\n\nHOLD all vehicles in lot L-24-0004 immediately. Vehicle SYN00000000000321 failed end-of-line test with fault code F-24; 40 additional vehicles show the same code, indicating a systemic issue at this station. Check battery installation torque and connection integrity first, then verify all test equipment calibration at ST-24 before releasing any vehicles."
+  "text": "CONTAINMENT ORDER - LOT HOLD\n\nStation: ST-24 (Battery install)\nLot: L-24-0004\n\nHold 250 vehicles immediately. Vehicle SYN00000000000321 failed end-of-line test with fault code F-24; 40 other vehicles in this lot show the same code, indicating a systematic defect at this station. Check battery installation torque and polarity verification at ST-24 first. Do not release any vehicles from lot L-24-0004 until root cause is confirmed and corrective action is verified. Bench testing is capable. Report completion within 4 hours."
  },
  "prompt_id": "compose",
  "usage": {
-  "completion_tokens": 155,
+  "completion_tokens": 171,
   "prompt_tokens": 809
  },
  "version": "1"

@@ -8,11 +8,11 @@
  },
  "model": "claude-haiku-4-5",
  "output": {
-  "text": "Vehicle SYN00000000000701 (F-18) escalation lacks containment despite bench capability being available. The contradiction: Station drift is STEP MEDIUM (suggesting process instability), yet zero correlated failures indicate an isolated event, not a systemic issue. With capable=True, containment should be feasible. This inconsistency requires investigation. A human should first examine the station drift root cause and verify whether F-18 is truly isolated or if correlation detection failed."
+  "text": "Vehicle SYS00000000000701 (F-18) escalation contradicts standard triage protocol: zero correlated failures and capable bench resources (capable=True) typically warrant containment before escalation, yet none is proposed. The STEP MEDIUM station drift verdict suggests process instability but insufficient data to isolate root cause. A human should first review the bench capability assessment and determine why containment was bypassed despite adequate resources."
  },
  "prompt_id": "escalate",
  "usage": {
-  "completion_tokens": 134,
+  "completion_tokens": 123,
   "prompt_tokens": 759
  },
  "version": "1"

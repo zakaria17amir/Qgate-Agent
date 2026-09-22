@@ -10,19 +10,19 @@
   "ranked": [
    {
     "characteristic_id": "CH-29-TOE",
-    "reasoning": "ST-29 had an out-of-tolerance measurement in the build record and is the direct measurement station for wheel alignment (CH-29-TOE), making it the most likely source of fault F-29.",
+    "reasoning": "ST-29 directly measured the wheel alignment characteristic (CH-29-TOE) and the build record shows a measurement out of tolerance at this station, making it the most likely source of fault F-29.",
     "station_id": "ST-29"
    },
    {
     "characteristic_id": "CH-20-TORQUE",
-    "reasoning": "ST-20 was not flagged as out-of-tolerance in the build record, so while subframe torque errors could theoretically affect alignment, there is no evidence supporting this as the fault source.",
+    "reasoning": "ST-20 could indirectly cause alignment faults through subframe torque errors, but no out-of-tolerance measurements were recorded at this station in the build record.",
     "station_id": "ST-20"
    }
   ]
  },
  "prompt_id": "hypothesise",
  "usage": {
-  "completion_tokens": 202,
+  "completion_tokens": 195,
   "prompt_tokens": 945
  },
  "version": "1"

@@ -11,11 +11,11 @@
  },
  "model": "claude-haiku-4-5",
  "output": {
-  "text": "CONTAINMENT ORDER - SINGLE\n\nHold vehicle SYN00000000000333 immediately. This vehicle failed end-of-line test with code F-18 and must not proceed to the next station. No other vehicles show this code; drift is LOW and bench capable is True.\n\nStation: ST-18 (Brake fill)\n\nAction: Secure this vehicle only. Do not release until root cause is confirmed and corrective action is verified. First, inspect the brake fill system at ST-18 for proper fluid level, hose connections, and any visible leaks or contamination."
+  "text": "CONTAINMENT ORDER - SINGLE\n\nHold vehicle SYN00000000000333 immediately. This vehicle failed end-of-line test with code F-18 and must not proceed to the next station. No other vehicles show this code; drift is LOW and bench capable is True.\n\nStation ST-18 (Brake fill) is the containment point. Check the brake fill level and system pressure first. Do not release this vehicle until the failure is resolved and verified by quality."
  },
  "prompt_id": "compose",
  "usage": {
-  "completion_tokens": 158,
+  "completion_tokens": 134,
   "prompt_tokens": 806
  },
  "version": "1"
