@@ -7,9 +7,10 @@ CORE           := --profile core
 OBS            := --profile obs
 EVAL           := --profile eval
 CHAOS          := --profile chaos
+LOAD           := --profile load
 DEMO           := --profile demo
 
-.PHONY: help up up-infra up-all down logs ps demo chaos chaos-test \
+.PHONY: help up up-infra up-all down logs ps demo chaos chaos-test load \
         install lint fmt typecheck unit contract integration eval-replay eval-live scan build console-e2e \
         token migrate goldens-freeze clean
 
@@ -45,6 +46,12 @@ demo: ## export a scenario and replay it with the C++ line-sim: make demo SCENAR
 
 chaos: ## start core + toxiproxy with agent->mock-mes routed through the proxy
 	MES_BASE_URL=http://toxiproxy:8003 $(COMPOSE) $(CORE) $(CHAOS) up -d --build
+
+load: ## k6: 5 VUs steady + 50 burst against the api; agent in replay mode; writes eval/load.json
+	MSYS_NO_PATHCONV=1 LLM_MODE=replay CASSETTE_DIR=/cassettes $(COMPOSE) $(CORE) up -d --wait agent api detect mock-mes
+	uv run python loadtest/prepare.py
+	$(COMPOSE) $(CORE) $(LOAD) run --rm k6
+	@uv run python loadtest/check.py
 
 chaos-test: ## run tests/chaos against a `make chaos` stack (kills containers, cuts links)
 	CHAOS=1 uv run pytest tests/chaos -m chaos -v

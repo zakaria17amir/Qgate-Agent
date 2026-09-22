@@ -153,16 +153,31 @@ def scope_vins(conn: psycopg.Connection, row: dict[str, Any]) -> list[str]:
     return sorted(found | ({row["trigger_vin"]} if row["trigger_vin"] else set()))
 
 
-def list_by_state(conn: psycopg.Connection, state: str | None) -> list[dict[str, Any]]:
-    """``state`` may be a comma-separated list (the console queue shows PROPOSED and ESCALATED)."""
+SUMMARY = (  # the list endpoint: everything but the evidence blob (the console polls it every 5 s)
+    "containment_id, thread_id, state, kind, station_id, window_start, window_end, lot_ids, "
+    "vin_count, confidence, reason, proposed_at, expires_at, decided_at, decided_by, mes_ref, "
+    "trigger_vin"
+)
+
+
+def list_by_state(
+    conn: psycopg.Connection, state: str | None, thread_id: uuid.UUID | None = None
+) -> list[dict[str, Any]]:
+    """``state`` may be a comma-separated list (the console queue shows PROPOSED and ESCALATED);
+    ``thread_id`` finds the one row a triage produced."""
+    where: list[str] = []
+    params: list[Any] = []
+    if state:
+        where.append("state = any(%s)")
+        params.append(state.split(","))
+    if thread_id:
+        where.append("thread_id = %s")
+        params.append(thread_id)
+    clause = f"where {' and '.join(where)}" if where else ""
     with conn.cursor(row_factory=dict_row) as cur:
-        if state:
-            return cur.execute(
-                "select * from qgate.containment where state = any(%s) order by proposed_at desc",
-                (state.split(","),),
-            ).fetchall()
         return cur.execute(
-            "select * from qgate.containment order by proposed_at desc limit 200"
+            f"select {SUMMARY} from qgate.containment {clause} order by proposed_at desc limit 200",  # noqa: S608 — clause is built from fixed fragments
+            params,
         ).fetchall()
 
 

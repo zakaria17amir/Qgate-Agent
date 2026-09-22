@@ -6,6 +6,7 @@ so the request returns at once; state lives in the checkpointer, not in this pro
 
 import logging
 import threading
+import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -116,7 +117,13 @@ def build_http(
         if not snap.values:
             raise HTTPException(404, "unknown thread")
         if snap.tasks and any(t.interrupts for t in snap.tasks):
-            taken = start(thread_id, Command(resume=req.model_dump(mode="json")))
+            # the proposal row is visible a beat before the triage's worker returns from the
+            # interrupt; give it up to 2 s to let go rather than answer 409 and wait a sweep
+            deadline = time.monotonic() + 2
+            while not (taken := start(thread_id, Command(resume=req.model_dump(mode="json")))):
+                if time.monotonic() > deadline:
+                    break
+                time.sleep(0.05)
         elif snap.next:
             # checkpointed mid-run: if nobody here is driving it, its process died between nodes.
             # Continue from the checkpoint; the decision it carried was already consumed.

@@ -121,9 +121,9 @@ def build_app(
         return dict(r.json())
 
     @app.get("/containments", dependencies=[Depends(viewer)])
-    def list_(state: str | None = None) -> list[dict[str, Any]]:
+    def list_(state: str | None = None, thread_id: uuid.UUID | None = None) -> list[dict[str, Any]]:
         with pool.connection() as conn:
-            return store.list_by_state(conn, state)
+            return store.list_by_state(conn, state, thread_id)
 
     @app.get("/containments/{cid}", dependencies=[Depends(viewer)])
     def get_one(cid: uuid.UUID) -> dict[str, Any]:

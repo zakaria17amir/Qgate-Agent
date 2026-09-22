@@ -229,12 +229,15 @@ services:
       <<: *python-env
       PORT: "8001"
       MES_BASE_URL: ${MES_BASE_URL:-http://mock-mes:8003}   # `make chaos` routes it via toxiproxy
-      CASSETTE_DIR: /tmp/cassettes   # containers never write into the repo's recorded set
+      LLM_MODE: ${LLM_MODE:-replay}
+      # containers never write into the repo's recorded set; `make load` reads it (replay, read-only)
+      CASSETTE_DIR: ${CASSETTE_DIR:-/tmp/cassettes}
       DATABASE_URL_AGENT_RO: postgres://agent_ro:${POSTGRES_PASSWORD}@postgres:5432/qgate
       DATABASE_URL_CHECKPOINT_RW: postgres://checkpoint_rw:${POSTGRES_PASSWORD}@postgres:5432/qgate
     volumes:
       - ./knowledge:/knowledge:ro
       - ./schemas:/schemas:ro
+      - ./eval/cassettes:/cassettes:ro
     depends_on:
       redpanda: { condition: service_healthy }
       roles: { condition: service_completed_successfully }
@@ -412,6 +415,17 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock   # replay_scenario spawns line-sim
       - ./eval:/workspace/eval
     depends_on: [prefect-server]
+
+  # ---------------------------------------------------------------- load
+  k6:
+    image: grafana/k6:0.54.0
+    profiles: [load]
+    command: ["run", "--summary-export", "/out/load.json", "/scripts/triage.js"]
+    environment:
+      API_URL: http://api:8000
+    volumes:
+      - ./loadtest:/scripts:ro
+      - ./eval:/out
 
   # ---------------------------------------------------------------- chaos
   toxiproxy:

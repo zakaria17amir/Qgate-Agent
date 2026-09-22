@@ -265,3 +265,18 @@ def test_a_decision_is_counted_and_timed(api: TestClient) -> None:
 
     assert count(after) == count(before) + 1
     assert "gate_decision_seconds_count" in after
+
+
+def test_list_is_a_summary_and_filters_by_thread(api: TestClient) -> None:
+    """The queue polls this every 5 s: no evidence blobs, and one thread can be found directly."""
+    p = {**proposal(), "evidence": {"siblings": {"vins": ["SYN2"] * 500}}}
+    api.post("/internal/containments", json=p, headers=auth(Role.SERVICE))
+    rows = api.get(
+        "/containments", params={"thread_id": str(p["thread_id"])}, headers=auth(Role.VIEWER)
+    ).json()
+    assert len(rows) == 1 and rows[0]["thread_id"] == p["thread_id"]
+    assert "evidence" not in rows[0] and "vin_count" in rows[0]
+    assert (
+        "evidence"
+        in api.get(f"/containments/{rows[0]['containment_id']}", headers=auth(Role.VIEWER)).json()
+    )
