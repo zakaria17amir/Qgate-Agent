@@ -1,13 +1,10 @@
 """detect's HTTP surface: on-demand drift onset and bench capability over ``detect_ro``."""
 
-import os
 from collections import defaultdict
 from dataclasses import asdict
 from datetime import datetime
-from pathlib import Path
 from typing import Annotated, Any
 
-import aiosql
 import numpy as np
 import psycopg
 from fastapi import FastAPI, HTTPException, Query
@@ -15,12 +12,11 @@ from psycopg_pool import ConnectionPool
 
 from qgate_core.health import health_app
 from qgate_core.settings import Settings
+from qgate_core.sql import queries
 from qgate_detect.changepoint import detect_change
 from qgate_detect.msa import capability
 
-QUERIES = aiosql.from_path(
-    Path(os.environ.get("QGATE_QUERIES_DIR", "db/queries")) / "detect.sql", "psycopg"
-)
+QUERIES = queries("detect")
 
 
 From = Annotated[datetime, Query(alias="from")]

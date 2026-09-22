@@ -2280,7 +2280,6 @@ name = "qgate-agent"
 version = "0.1.0"
 source = { editable = "services/agent" }
 dependencies = [
-    { name = "aiosql" },
     { name = "fastapi" },
     { name = "langchain" },
     { name = "langchain-anthropic" },
@@ -2299,7 +2298,6 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aiosql", specifier = ">=15,<16" },
     { name = "fastapi", specifier = ">=0.141,<1" },
     { name = "langchain", specifier = ">=1.4,<2" },
     { name = "langchain-anthropic", specifier = ">=1.7,<2" },
