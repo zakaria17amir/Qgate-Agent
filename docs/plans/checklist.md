@@ -177,7 +177,7 @@ Console and C++ are independent of each other; reliability items need Phase 3 co
 - [x] **[F]** Circuit breaker on `mock-mes`; `COMMIT_PENDING` via `api PATCH` from a `pending` node; `retry_gate` interrupts; api sweeper re-resumes every 30 s (one cadence for expiry and retry) → outage without data loss (ADR-012)
 - [x] **[F]** Chaos profile wired (`agent → toxiproxy → mock-mes`, `make chaos`); in-process: lost ack → one hold, `duplicate_replays ≥ 1`; outage → parked → swept → committed; `tests/chaos`: 20 s outage mid-commit, kill agent mid-gate → `make chaos-test`
 - [x] **[F]** `/ready` checks real dependencies on every service (api: db+agent; agent: both dbs, detect, api; detect: db; ingest/worker: broker) → compose probes `/ready`
-- [ ] **[G]** **Gate 4:** shift leader runs the demo without a terminal; chaos suite passes; CI green
+- [x] **[G]** **Gate 4** (RUNBOOK §0 walks the demo from the console; `make chaos-test` 2/2 on real containers, twice; PR #25 CI 8/8 incl. the new `console` job)**:** shift leader runs the demo without a terminal; chaos suite passes; CI green
 
 ---
 
