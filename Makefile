@@ -80,8 +80,8 @@ contract: ## schemathesis against api + mock-mes OpenAPI; Avro compatibility
 integration: ## testcontainers: Postgres + Redpanda end to end
 	uv run pytest -m "integration or slow" || [ $$? -eq 5 ]
 
-eval-replay: ## golden cases with recorded LLM responses; compare to eval/baseline.json
-	uv run qgate-eval run --mode replay --baseline eval/baseline.json
+eval-replay: ## golden cases with recorded LLM responses; compare to eval/baseline.json (needs Docker)
+	LLM_MODEL=$${LLM_MODEL:-claude-haiku-4-5} uv run qgate-eval run --mode replay --baseline eval/baseline.json --report eval/report.md
 
 eval-live: ## golden cases against the live model (costs money; nightly)
 	uv run qgate-eval run --mode live --report eval/report.md
