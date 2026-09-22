@@ -270,6 +270,7 @@ def make_nodes(deps: Deps) -> dict[str, Callable[[TriageState], dict[str, Any]]]
                 "draft_order": s["draft_order"],
                 "golden_id": s.get("golden_id"),
                 "evidence": _evidence(s),
+                "trigger_vin": s["vin"],
             },
         )
         r.raise_for_status()
@@ -398,6 +399,7 @@ def _no_proposal(deps: Deps, s: TriageState, outcome: str, reason: str) -> dict[
             "reason": reason,
             "golden_id": s.get("golden_id"),
             "evidence": _evidence(s),
+            "trigger_vin": s["vin"],
         },
     )
     r.raise_for_status()

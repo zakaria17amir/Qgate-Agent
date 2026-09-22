@@ -15,6 +15,7 @@ from typing import Annotated, Any, Protocol
 import httpx
 from confluent_kafka import Producer
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from psycopg_pool import ConnectionPool
 from pydantic import BaseModel, Field
 
@@ -32,6 +33,7 @@ class ApiSettings(Settings):
     jwt_secret: str = "dev-only-change-me"  # noqa: S105 — overridden by JWT_SECRET in .env
     approval_timeout_s: int = 1800  # env APPROVAL_TIMEOUT_S
     agent_base_url: str = "http://agent:8001"
+    cors_origins: str = "http://localhost:8080,http://localhost:4173"  # the console's origins
 
 
 class AgentClient(Protocol):
@@ -57,6 +59,12 @@ def build_app(
         return checks
 
     app = health_app("api", ready)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins.split(","),
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     timeout = timedelta(seconds=settings.approval_timeout_s)
     viewer = require(Role.VIEWER, Role.APPROVER, Role.ADMIN, secret=settings.jwt_secret)
     approver = require(Role.APPROVER, Role.ADMIN, secret=settings.jwt_secret)
@@ -125,6 +133,32 @@ def build_app(
         if row is None:
             raise HTTPException(404, "no such containment")
         return row
+
+    @app.get("/containments/{cid}/preview", dependencies=[Depends(viewer)])
+    def preview(
+        cid: uuid.UUID,
+        window_start: datetime | None = None,
+        window_end: datetime | None = None,
+        lot_ids: str | None = None,
+    ) -> dict[str, Any]:
+        """What an amendment *would* hold: the console's live VIN count."""
+        with pool.connection() as conn:
+            row = store.get(conn, cid)
+            if row is None:
+                raise HTTPException(404, "no such containment")
+            row.update(
+                {
+                    k: v
+                    for k, v in {
+                        "window_start": window_start,
+                        "window_end": window_end,
+                        "lot_ids": lot_ids.split(",") if lot_ids else None,
+                    }.items()
+                    if v is not None
+                }
+            )
+            vins = store.scope_vins(conn, row)
+        return {"vin_count": len(vins), "vins": vins}
 
     @app.get("/audit", dependencies=[Depends(viewer)])
     def audit() -> list[dict[str, Any]]:

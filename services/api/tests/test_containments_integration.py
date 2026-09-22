@@ -14,15 +14,17 @@ from qgate_api.store import sweep_expired
 from qgate_core.auth import Role, mint
 from qgate_generator.line import Line
 from qgate_generator.seed import seed_dims
+from qgate_generator.stream import Run
 
 pytestmark = pytest.mark.integration
 SECRET = "test-secret"
+ROOT = Path(__file__).parents[3]
 
 
 @pytest.fixture(scope="module")
 def api(pg_url: str) -> Iterator[TestClient]:
     with psycopg.connect(pg_url) as conn:
-        seed_dims(conn, Line.load(Path(__file__).parents[3] / "scenarios" / "line.yaml"))
+        seed_dims(conn, Line.load(ROOT / "scenarios" / "line.yaml"))
     settings = ApiSettings(database_url=pg_url, jwt_secret=SECRET, approval_timeout_s=60)
     with TestClient(build_app(settings, agent=None, producer=None)) as c:
         yield c
@@ -120,3 +122,112 @@ def test_evidence_travels_with_the_proposal(api: TestClient) -> None:
         headers=auth(Role.SERVICE),
     ).json()["containment_id"]
     assert api.get(f"/containments/{cid}", headers=auth(Role.VIEWER)).json()["evidence"] == evidence
+
+
+@pytest.fixture(scope="module")
+def run_loaded(pg_url: str) -> Run:
+    """A small tool_wear run in the fact tables, for VIN scoping."""
+    from qgate_generator.load import copy_run, truncate_facts
+    from qgate_generator.scenario import Scenario
+    from qgate_generator.stream import generate
+
+    line = Line.load(ROOT / "scenarios" / "line.yaml")
+    scenario = Scenario.load(ROOT / "scenarios" / "tool_wear.yaml", line)
+    run = generate(line, scenario.model_copy(update={"vehicles": 300}))
+    with psycopg.connect(pg_url) as conn:
+        truncate_facts(conn)
+        copy_run(conn, run)
+    return run
+
+
+def _window_proposal(pg_url: str, run: Run) -> tuple[dict[str, object], str, int]:
+    """A WINDOW proposal over the run's first hour at ST-19, plus a trigger built in that hour."""
+    with psycopg.connect(pg_url) as conn:
+        row = conn.execute(
+            "select min(entered_at) from qgate.fact_build_event where station_id = 'ST-19'"
+        ).fetchone()
+        assert row is not None
+        first = row[0]
+        end = first + timedelta(hours=1)
+        vins = [
+            r[0]
+            for r in conn.execute(
+                "select vin from qgate.fact_build_event where station_id = 'ST-19' "
+                "and entered_at >= %s and entered_at < %s order by entered_at",
+                (first, end),
+            )
+        ]
+    trigger = vins[-1]
+    p = {
+        **proposal(trigger),
+        "window_start": first.isoformat(),
+        "window_end": end.isoformat(),
+        "vins": vins,
+        "trigger_vin": trigger,
+    }
+    return p, trigger, len(vins)
+
+
+def test_preview_counts_vins_the_amended_window_would_hold(
+    api: TestClient, pg_url: str, run_loaded: Run
+) -> None:
+    p, trigger, n = _window_proposal(pg_url, run_loaded)
+    cid = api.post("/internal/containments", json=p, headers=auth(Role.SERVICE)).json()[
+        "containment_id"
+    ]
+    start = datetime.fromisoformat(str(p["window_start"])) + timedelta(minutes=10)
+    preview = api.get(
+        f"/containments/{cid}/preview",
+        params={"window_start": start.isoformat()},
+        headers=auth(Role.VIEWER),
+    ).json()
+    assert 0 < preview["vin_count"] < n and trigger in preview["vins"]
+
+
+def test_amend_recomputes_vins_and_keeps_the_trigger(
+    api: TestClient, pg_url: str, run_loaded: Run
+) -> None:
+    """Review Focus 3: a window that excludes the trigger still holds the trigger."""
+    p, trigger, n = _window_proposal(pg_url, run_loaded)
+    cid = api.post("/internal/containments", json=p, headers=auth(Role.SERVICE)).json()[
+        "containment_id"
+    ]
+    end = datetime.fromisoformat(str(p["window_end"])) - timedelta(minutes=30)
+    r = api.post(
+        f"/containments/{cid}/amend",
+        json={"window_end": end.isoformat(), "reason": "tool changed at :30"},
+        headers=auth(Role.APPROVER),
+    )
+    assert r.status_code == 200, r.text
+    row = r.json()
+    assert row["state"] == "AMENDED" and 0 < row["vin_count"] < n
+    assert trigger in row["vins"]  # built after :30, yet the failing car is never released
+
+
+def test_list_accepts_several_states(api: TestClient) -> None:
+    api.post("/internal/containments", json=proposal(), headers=auth(Role.SERVICE))
+    api.post(
+        "/internal/containments",
+        json={**proposal(), "kind": "NONE", "state": "ESCALATED", "vins": []},
+        headers=auth(Role.SERVICE),
+    )
+    states = {
+        c["state"]
+        for c in api.get(
+            "/containments", params={"state": "PROPOSED,ESCALATED"}, headers=auth(Role.VIEWER)
+        ).json()
+    }
+    assert states == {"PROPOSED", "ESCALATED"}
+
+
+def test_console_origin_passes_cors_preflight(api: TestClient) -> None:
+    r = api.options(
+        "/containments",
+        headers={
+            "Origin": "http://localhost:8080",
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "authorization",
+        },
+    )
+    assert r.status_code == 200
+    assert r.headers["access-control-allow-origin"] == "http://localhost:8080"

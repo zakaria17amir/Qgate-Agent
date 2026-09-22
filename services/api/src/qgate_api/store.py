@@ -13,6 +13,8 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 from pydantic import BaseModel, Field
 
+from qgate_core.sql import queries
+
 DECIDABLE = ("PROPOSED",)  # only a pending proposal can be approved, amended or rejected
 
 
@@ -30,6 +32,7 @@ class Proposal(BaseModel):
     golden_id: str | None = None  # eval harness only
     state: str = "PROPOSED"  # ESCALATED for "no proposal"
     evidence: dict[str, Any] = Field(default_factory=dict)  # for the console's case view
+    trigger_vin: str | None = None  # the failing vehicle; never released by an amendment
 
 
 class Outcome(BaseModel):
@@ -63,8 +66,8 @@ def propose(conn: psycopg.Connection, p: Proposal, timeout: timedelta) -> uuid.U
     conn.execute(
         "insert into qgate.containment (containment_id, thread_id, state, kind, station_id, "
         "window_start, window_end, lot_ids, vin_count, confidence, reason, draft_order, "
-        "proposed_at, expires_at, idempotency_key, evidence) "
-        "values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+        "proposed_at, expires_at, idempotency_key, evidence, trigger_vin) "
+        "values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
         (
             cid,
             p.thread_id,
@@ -82,12 +85,10 @@ def propose(conn: psycopg.Connection, p: Proposal, timeout: timedelta) -> uuid.U
             now + timeout if p.state == "PROPOSED" else None,
             cid,
             Jsonb(p.evidence),
+            p.trigger_vin,
         ),
     )
-    with conn.cursor() as cur:
-        cur.executemany(
-            "insert into qgate.containment_vin values (%s, %s)", [(cid, v) for v in p.vins]
-        )
+    _set_vins(conn, cid, p.vins)
     conn.execute(
         "insert into qgate.containment_audit (containment_id, thread_id, golden_id, proposed, "
         "decided, diff, decision, actor) values (%s, %s, %s, %s, '{}', '{}', %s, 'agent')",
@@ -120,12 +121,45 @@ def get(conn: psycopg.Connection, cid: uuid.UUID) -> dict[str, Any] | None:
     return row
 
 
+def _set_vins(conn: psycopg.Connection, cid: uuid.UUID, vins: list[str]) -> None:
+    conn.execute("delete from qgate.containment_vin where containment_id = %s", (cid,))
+    with conn.cursor() as cur:
+        cur.executemany(
+            "insert into qgate.containment_vin values (%s, %s)", [(cid, v) for v in vins]
+        )
+    conn.execute(
+        "update qgate.containment set vin_count = %s where containment_id = %s", (len(vins), cid)
+    )
+
+
+def scope_vins(conn: psycopg.Connection, row: dict[str, Any]) -> list[str]:
+    """The vehicles a row's bounds hold, recomputed from the build events (never trusted from a
+    client) and always including the trigger: an amendment may narrow, never release the failing
+    car."""
+    q, kind, st = queries("window"), row["kind"], row["station_id"]
+    if kind == "WINDOW" and st and row["window_start"] and row["window_end"]:
+        found = {
+            r[0]
+            for r in q.vins_in_window(
+                conn, station_id=st, start=row["window_start"], end=row["window_end"]
+            )
+        }
+    elif kind == "LOT" and st:
+        found = {
+            r[0] for lot in row["lot_ids"] for r in q.vins_by_lot(conn, station_id=st, lot_id=lot)
+        }
+    else:
+        found = set()
+    return sorted(found | ({row["trigger_vin"]} if row["trigger_vin"] else set()))
+
+
 def list_by_state(conn: psycopg.Connection, state: str | None) -> list[dict[str, Any]]:
+    """``state`` may be a comma-separated list (the console queue shows PROPOSED and ESCALATED)."""
     with conn.cursor(row_factory=dict_row) as cur:
         if state:
             return cur.execute(
-                "select * from qgate.containment where state = %s order by proposed_at desc",
-                (state,),
+                "select * from qgate.containment where state = any(%s) order by proposed_at desc",
+                (state.split(","),),
             ).fetchall()
         return cur.execute(
             "select * from qgate.containment order by proposed_at desc limit 200"
@@ -186,15 +220,11 @@ def decide(conn: psycopg.Connection, cid: uuid.UUID, d: Decision) -> dict[str, A
             (d.station_id, d.window_start, d.window_end, d.lot_ids, cid),
         )
         if d.vins is not None:
-            conn.execute("delete from qgate.containment_vin where containment_id = %s", (cid,))
-            with conn.cursor() as cur:
-                cur.executemany(
-                    "insert into qgate.containment_vin values (%s, %s)", [(cid, v) for v in d.vins]
-                )
-            conn.execute(
-                "update qgate.containment set vin_count = %s where containment_id = %s",
-                (len(d.vins), cid),
-            )
+            _set_vins(conn, cid, d.vins)
+        elif _diff(current, d):  # bounds moved: re-scope from the build events
+            amended = get(conn, cid)
+            assert amended is not None
+            _set_vins(conn, cid, scope_vins(conn, amended))
     conn.execute(
         "update qgate.containment set state = %s, decided_at = now(), decided_by = %s "
         "where containment_id = %s",
