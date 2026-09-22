@@ -143,7 +143,11 @@ def make_nodes(deps: Deps) -> dict[str, Callable[[TriageState], dict[str, Any]]]
 
     def genealogy(s: TriageState) -> dict[str, Any]:
         with deps.ro.connection() as conn:
-            return {"genealogy": get_vehicle_genealogy(conn, s["vin"])}
+            g = get_vehicle_genealogy(conn, s["vin"])
+        if g.eol is None:
+            raise ValueError(f"{s['vin']} has no end-of-line result to triage")
+        # a manual trigger may omit the clock; the vehicle's own EOL time is the honest one
+        return {"genealogy": g, **({} if s.get("eol_ts") else {"eol_ts": g.eol.tested_at})}
 
     def hypothesise(s: TriageState) -> dict[str, Any]:
         candidates = [c for code in s["fault_codes"] for c in fm[code]["candidates"]]

@@ -7,7 +7,7 @@ so the request returns at once; state lives in the checkpointer, not in this pro
 import logging
 import uuid
 from concurrent.futures import ThreadPoolExecutor
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
@@ -59,16 +59,15 @@ def build_http(
     @app.post("/triage", status_code=202)
     def triage(req: TriageRequest) -> dict[str, str]:
         thread_id = str(uuid.uuid4())
-        start(
-            thread_id,
-            {
-                "thread_id": thread_id,
-                "vin": req.vin,
-                "fault_codes": req.fault_codes,
-                "eol_ts": req.eol_ts or datetime.now(UTC),
-                "golden_id": req.golden_id,
-            },
-        )
+        payload: dict[str, Any] = {
+            "thread_id": thread_id,
+            "vin": req.vin,
+            "fault_codes": req.fault_codes,
+            "golden_id": req.golden_id,
+        }
+        if req.eol_ts is not None:  # otherwise the genealogy node takes the vehicle's real EOL time
+            payload["eol_ts"] = req.eol_ts
+        start(thread_id, payload)
         return {"thread_id": thread_id}
 
     @app.get("/threads/{thread_id}")

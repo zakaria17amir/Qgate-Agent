@@ -16,7 +16,7 @@ import httpx
 from confluent_kafka import Producer
 from fastapi import Depends, FastAPI, HTTPException
 from psycopg_pool import ConnectionPool
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from qgate_api import store
 from qgate_core import kafka
@@ -86,6 +86,20 @@ def build_app(
         assert row is not None
         announce(row, "agent")
         return row
+
+    class TriageRequest(BaseModel):
+        vin: str
+        fault_codes: list[str]
+
+    @app.post("/triage", status_code=202, dependencies=[Depends(approver)])
+    def triage(req: TriageRequest) -> dict[str, Any]:
+        """Manual trigger; the normal path is the agent's own EOL consumer (ADR-007)."""
+        if agent is None:
+            raise HTTPException(503, "no agent configured")
+        r = agent.post("/triage", json=req.model_dump())
+        if r.status_code >= 300:
+            raise HTTPException(502, f"agent refused: {r.text}")
+        return dict(r.json())
 
     @app.get("/containments", dependencies=[Depends(viewer)])
     def list_(state: str | None = None) -> list[dict[str, Any]]:
