@@ -108,7 +108,7 @@ Order matters: station ids come from `line.yaml`; everything else references the
 - [x] **[F]** `qgate_agent/tools/`: `get_vehicle_genealogy`, `get_station_spec`, `find_correlated_failures`, `check_station_drift`, `estimate_containment_window` as plain typed functions on `AGENT_RO` + `DETECT_BASE_URL`; no LangGraph yet → graph nodes
 - [x] **[F]** `qgate_mock_mes`: server validated against `openapi.yaml` (idempotent `POST /v1/holds`, 409 on conflicting body, API key, `/_chaos`, `/_stats`) → `commit` node; **needs** nothing else — can be built in parallel with detect
 - [x] **[F]** Contract tests: `schemathesis` against `mock-mes` OpenAPI → `make contract`
-- [x] **[G]** **Gate 2:** `pytest -m eval_tools` — for every golden, tools alone return the correct siblings, onset (± tolerance) and bench verdict, with no model in the loop; CI green
+- [x] **[G]** **Gate 2** (CI f9cccf1 7/7, goldens-v1.1)**:** `pytest -m eval_tools` — for every golden, tools alone return the correct siblings, onset (± tolerance) and bench verdict, with no model in the loop; CI green
 
 ---
 
