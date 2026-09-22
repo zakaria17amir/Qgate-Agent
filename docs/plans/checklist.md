@@ -150,7 +150,7 @@ Order is strict here: api endpoints before the gate, gate before commit, cassett
 - [x] **[F]** `LLM_MODE=record` over all 50 goldens → commits `eval/cassettes/` (synthetic VINs only) → deterministic CI
 - [x] **[F]** First `replay` run → writes `eval/baseline.json` (with `goldens_tag`, `cassette_set`) → CI gate has a reference
 - [x] **[F]** `make eval-replay` compares to baseline; fails on escapes ↑ or non-LLM p95 ↑ > 20 % → `eval-replay` job is a real gate
-- [x] **[G]** **Gate 3** (curl approve on compose → HOLD-000001; restart mid-gate test; replay baseline)**:** failure event → proposal; approve/amend via `curl`; amendment recorded with diff; kill agent mid-gate loses nothing; CI green with eval gate active
+- [x] **[G]** **Gate 3** (curl approve on compose → HOLD-000001; restart mid-gate test; replay baseline; CI 302132b 7/7 with eval gate active)**:** failure event → proposal; approve/amend via `curl`; amendment recorded with diff; kill agent mid-gate loses nothing; CI green with eval gate active
 
 ---
 
