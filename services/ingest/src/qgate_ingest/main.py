@@ -12,7 +12,7 @@ import psycopg
 from confluent_kafka import Message, Producer
 from pydantic import BaseModel
 
-from qgate_core import kafka
+from qgate_core import kafka, metrics
 from qgate_core.health import health_app, ok, serve
 from qgate_core.models import TOPIC, BuildEvent, EolResult, LineRecord, Measurement
 from qgate_core.settings import Settings
@@ -48,17 +48,20 @@ def handle(settings: Settings, conn: psycopg.Connection, dlq: Producer, msg: Mes
     stalls on one record. A lost *database* is not a message problem: it propagates, the offset
     stays uncommitted, and the message is redelivered when the service comes back.
     """
+    topic = msg.topic() or ""
     try:
-        record = kafka.decode(settings, msg, MODELS[msg.topic() or ""])
+        record = kafka.decode(settings, msg, MODELS[topic])
         upsert(conn, _as_line_record(record))
         conn.commit()
+        metrics.INGEST_RECORDS.labels(topic=topic, result="ok").inc()
         return False
     except psycopg.OperationalError:
         raise
     except Exception as e:
         conn.rollback()
-        log.warning("dlq %s@%s: %s", msg.topic(), msg.offset(), e)
+        log.warning("dlq %s@%s: %s", topic, msg.offset(), e)
         kafka.send_to_dlq(dlq, msg, e)
+        metrics.INGEST_RECORDS.labels(topic=topic, result="dlq").inc()
         return True
 
 

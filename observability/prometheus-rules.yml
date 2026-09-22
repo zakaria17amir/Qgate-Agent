@@ -1,0 +1,18 @@
+groups:
+  - name: qgate
+    interval: 5s
+    rules:
+      # §11 kafka_consumer_lag{group,topic}: Redpanda exposes committed offsets and the log end per
+      # partition; the difference, summed per group and topic, is the lag the dashboard shows.
+      - record: kafka_consumer_lag
+        expr: |
+          sum by (group, topic) (
+            label_replace(label_replace(
+              max by (redpanda_topic, redpanda_partition) (redpanda_kafka_max_offset{redpanda_namespace="kafka"}),
+              "topic", "$1", "redpanda_topic", "(.*)"), "partition", "$1", "redpanda_partition", "(.*)")
+            - on (topic, partition) group_right
+            label_replace(label_replace(label_replace(
+              redpanda_kafka_consumer_group_committed_offset,
+              "topic", "$1", "redpanda_topic", "(.*)"), "partition", "$1", "redpanda_partition", "(.*)"),
+              "group", "$1", "redpanda_group", "(.*)")
+          )

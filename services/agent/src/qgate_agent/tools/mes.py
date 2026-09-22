@@ -21,6 +21,8 @@ from tenacity import (
     wait_exponential_jitter,
 )
 
+from qgate_core import metrics
+
 log = logging.getLogger("agent.mes")
 
 ATTEMPTS = 5
@@ -48,15 +50,18 @@ class Breaker:
             if self.probing or self.clock() - self.opened_at < self.open_s:
                 return False
             self.probing = True
-            return True
+        metrics.set_breaker_state("half_open")
+        return True
 
     def succeeded(self) -> None:
         with self.lock:
             self.opened_at, self.probing = None, False
+        metrics.set_breaker_state("closed")
 
     def failed(self) -> None:
         with self.lock:
             self.opened_at, self.probing = self.clock(), False
+        metrics.set_breaker_state("open")
 
 
 def _server_error(r: httpx.Response) -> bool:
@@ -76,15 +81,21 @@ def post_hold(
             wait=WAIT,
             retry=retry_if_result(_server_error) | retry_if_exception_type(httpx.TransportError),
             reraise=True,
-        )(
-            client.post,
-            "/v1/holds",
-            headers={"Idempotency-Key": containment_id},
-            json=body,
-        )
+        )(lambda: _counted_post(client, containment_id, body))
     except (httpx.TransportError, RetryError) as e:  # RetryError: the last answer was a 5xx
         log.warning("mes unavailable after %d attempts: %r", ATTEMPTS, e)
         breaker.failed()
         return None
     breaker.succeeded()
+    return r
+
+
+def _counted_post(client: HttpPoster, containment_id: str, body: dict[str, Any]) -> httpx.Response:
+    """One attempt, counted by status ('error' when no answer came back)."""
+    try:
+        r = client.post("/v1/holds", headers={"Idempotency-Key": containment_id}, json=body)
+    except httpx.TransportError:
+        metrics.MES_REQUESTS.labels(status="error").inc()
+        raise
+    metrics.MES_REQUESTS.labels(status=str(r.status_code)).inc()
     return r

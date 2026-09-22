@@ -31,12 +31,19 @@ def _no_backoff(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_transient_failures_are_retried_then_succeed() -> None:
+    from prometheus_client import generate_latest
+
+    from qgate_core import metrics
+
     client = Scripted(503, httpx.ConnectError("down"), 201)
     breaker = mes.Breaker()
     r = mes.post_hold(client, breaker, "cid-1", {"vins": []})
     assert r is not None and r.status_code == 201
     assert client.calls == 3
     assert breaker.allow()
+    text = generate_latest(metrics.REGISTRY).decode()  # every attempt is counted by status
+    for label in ('status="503"', 'status="error"', 'status="201"'):
+        assert f"mes_requests_total{{{label}}}" in text
 
 
 def test_exhausted_attempts_return_none_and_open_the_breaker() -> None:

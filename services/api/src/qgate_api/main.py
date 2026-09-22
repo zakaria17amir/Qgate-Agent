@@ -20,7 +20,7 @@ from psycopg_pool import ConnectionPool
 from pydantic import BaseModel, Field
 
 from qgate_api import store
-from qgate_core import kafka
+from qgate_core import kafka, metrics
 from qgate_core.auth import Principal, Role, mint, require
 from qgate_core.health import health_app, ok, serve
 from qgate_core.models import ContainmentEvent, State
@@ -56,6 +56,7 @@ def build_app(
         return {"db": ok(db)}
 
     app = health_app("api", ready)
+    metrics.gate_pending_collector(lambda: _count_pending(pool))
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins.split(","),
@@ -199,6 +200,10 @@ def build_app(
             row = store.decide(conn, cid, d)
         if row is None:
             raise HTTPException(409, "containment is not awaiting a decision")
+        metrics.GATE_DECISIONS.labels(decision=d.action).inc()
+        metrics.GATE_DECISION_SECONDS.observe(
+            (row["decided_at"] - row["proposed_at"]).total_seconds()
+        )
         announce(row, d.actor)
         human_resume(row, d.action, d.actor, d.reason)
         return row
@@ -235,6 +240,7 @@ def build_app(
             for cid in store.sweep_expired(conn, datetime.now(UTC)):
                 row = store.get(conn, cid)
                 if row is not None:
+                    metrics.GATE_DECISIONS.labels(decision="EXPIRED").inc()
                     announce(row, "system")
                     # the graph must learn the gate closed
                     resume(row, {"decision": "REJECT", "actor": "system", "reason": "expired"})
@@ -261,6 +267,14 @@ def build_app(
     app.state.sweep = sweep
     app.state.sweep_forever = sweep_forever
     return app
+
+
+def _count_pending(pool: ConnectionPool) -> int:
+    with pool.connection() as conn:
+        row = conn.execute(
+            "select count(*) from qgate.containment where state = 'PROPOSED'"
+        ).fetchone()
+    return int(row[0]) if row else 0
 
 
 def _jsonable(o: Any) -> Any:

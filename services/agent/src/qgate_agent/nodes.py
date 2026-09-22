@@ -37,6 +37,7 @@ from qgate_agent.tools import (
 )
 from qgate_agent.tools.detect_client import HttpGetter
 from qgate_agent.tools.mes import Breaker, post_hold
+from qgate_core import metrics
 from qgate_core.pricing import Usage, cost_usd
 
 BREAKER = Breaker()  # one per process: every triage worker learns the MES is down at once
@@ -351,6 +352,13 @@ def make_nodes(deps: Deps) -> dict[str, Callable[[TriageState], dict[str, Any]]]
         """Close the audit row: final state plus what the run cost in time and tokens."""
         total = sum(s["timings_ms"].values())
         final = {"NO_CONTAINMENT": "ESCALATED"}.get(s["outcome"], s["outcome"])
+        cost = _cost(deps, s)
+        metrics.TRIAGE_DURATION.labels(phase="total").observe(total / 1000)
+        metrics.TRIAGE_DURATION.labels(phase="llm").observe(s["llm_ms"] / 1000)
+        metrics.TRIAGE_DURATION.labels(phase="non_llm").observe((total - s["llm_ms"]) / 1000)
+        metrics.TRIAGE_OUTCOMES.labels(outcome=s["outcome"]).inc()
+        if cost:
+            metrics.LLM_COST_USD.inc(cost)
         deps.api.patch(
             f"/internal/containments/{s['containment_id']}",
             json={
@@ -361,7 +369,7 @@ def make_nodes(deps: Deps) -> dict[str, Callable[[TriageState], dict[str, Any]]]
                 "latency_non_llm_ms": int(total - s["llm_ms"]),
                 "prompt_tokens": s["prompt_tokens"],
                 "completion_tokens": s["completion_tokens"],
-                "cost_usd": _cost(deps, s),
+                "cost_usd": cost,
             },
         ).raise_for_status()
         return {}
@@ -434,6 +442,8 @@ def _ask[S: BaseModel](
     accounts for its time and tokens (nodes must *return* updates, not mutate state)."""
     t0 = time.perf_counter()
     answer, usage = deps.ask(prompt_id, PROMPT_VERSION, inputs, schema)
+    metrics.LLM_TOKENS.labels(kind="prompt", prompt_id=prompt_id).inc(usage.prompt_tokens)
+    metrics.LLM_TOKENS.labels(kind="completion", prompt_id=prompt_id).inc(usage.completion_tokens)
     acct = {
         "llm_ms": s.get("llm_ms", 0.0) + (time.perf_counter() - t0) * 1000,
         "prompt_tokens": s.get("prompt_tokens", 0) + usage.prompt_tokens,

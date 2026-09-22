@@ -41,3 +41,16 @@ def test_database_outage_propagates_instead_of_parking(monkeypatch: pytest.Monke
     with pytest.raises(psycopg.OperationalError):
         handle(MagicMock(), conn, dlq, _msg())
     dlq.produce.assert_not_called()
+
+
+def test_a_parked_message_is_counted_as_dlq(monkeypatch: pytest.MonkeyPatch) -> None:
+    from prometheus_client import generate_latest
+
+    from qgate_core import metrics
+
+    monkeypatch.setattr(
+        "qgate_ingest.main.kafka.decode", MagicMock(side_effect=ValueError("bad avro"))
+    )
+    handle(MagicMock(), MagicMock(), MagicMock(), _msg())
+    text = generate_latest(metrics.REGISTRY).decode()
+    assert 'ingest_records_total{result="dlq",topic="line.eol.results"}' in text

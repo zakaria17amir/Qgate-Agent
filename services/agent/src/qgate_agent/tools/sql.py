@@ -14,12 +14,14 @@ from qgate_agent.tools.models import (
     StationSpec,
     StationVisit,
 )
+from qgate_core import metrics
 from qgate_core.sql import queries
 
 
 def get_vehicle_genealogy(conn: psycopg.Connection, vin: str) -> Genealogy:
     """Every station the vehicle passed, in build order, with measurements, lots and shift."""
-    rows = queries("genealogy").genealogy_by_vin(conn, vin=vin)
+    with metrics.GENEALOGY_QUERY_SECONDS.time():
+        rows = list(queries("genealogy").genealogy_by_vin(conn, vin=vin))
     visits = [
         StationVisit(
             station_id=station,

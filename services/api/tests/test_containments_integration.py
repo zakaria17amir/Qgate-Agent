@@ -231,3 +231,37 @@ def test_console_origin_passes_cors_preflight(api: TestClient) -> None:
     )
     assert r.status_code == 200
     assert r.headers["access-control-allow-origin"] == "http://localhost:8080"
+
+
+def test_gate_pending_counts_proposals_awaiting_a_decision(api: TestClient, pg_url: str) -> None:
+    """The gauge is counted on scrape from the table, so it is right across processes."""
+    with psycopg.connect(pg_url) as conn:
+        expected = conn.execute(
+            "select count(*) from qgate.containment where state = 'PROPOSED'"
+        ).fetchone()
+    assert expected is not None
+    text = api.get("/metrics").text
+    assert f"gate_pending {float(expected[0])}" in text
+
+
+def test_a_decision_is_counted_and_timed(api: TestClient) -> None:
+    cid = api.post("/internal/containments", json=proposal(), headers=auth(Role.SERVICE)).json()[
+        "containment_id"
+    ]
+    before = api.get("/metrics").text
+    api.post(f"/containments/{cid}/reject", json={"reason": "no"}, headers=auth(Role.APPROVER))
+    after = api.get("/metrics").text
+
+    def count(text: str) -> float:
+        line = next(
+            (
+                ln
+                for ln in text.splitlines()
+                if ln.startswith('gate_decisions_total{decision="REJECT"}')
+            ),
+            None,
+        )
+        return float(line.split()[-1]) if line else 0.0
+
+    assert count(after) == count(before) + 1
+    assert "gate_decision_seconds_count" in after
