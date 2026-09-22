@@ -20,9 +20,10 @@ from psycopg_pool import ConnectionPool
 from pydantic import BaseModel, Field
 
 from qgate_api import store
-from qgate_core import kafka, metrics
+from qgate_core import kafka, metrics, otel
 from qgate_core.auth import Principal, Role, mint, require
 from qgate_core.health import health_app, ok, serve
+from qgate_core.logs import configure_logging
 from qgate_core.models import ContainmentEvent, State
 from qgate_core.settings import Settings
 
@@ -196,8 +197,9 @@ def build_app(
 
     def decide(cid: uuid.UUID, d: store.Decision) -> dict[str, Any]:
         """Shared by approve/amend/reject: persist, announce, wake the waiting thread."""
-        with pool.connection() as conn:
-            row = store.decide(conn, cid, d)
+        with otel.span("api.decide", containment_id=str(cid), decision=d.action, actor=d.actor):
+            with pool.connection() as conn:
+                row = store.decide(conn, cid, d)
         if row is None:
             raise HTTPException(409, "containment is not awaiting a decision")
         metrics.GATE_DECISIONS.labels(decision=d.action).inc()
@@ -288,7 +290,8 @@ def _jsonable(o: Any) -> Any:
 
 
 def main() -> None:
-    logging.basicConfig(level="INFO")
+    configure_logging()
+    otel.configure("api")
     settings = ApiSettings()
     agent = httpx.Client(
         base_url=settings.agent_base_url,

@@ -18,8 +18,10 @@ from qgate_agent.graph import build_graph
 from qgate_agent.http import build_http
 from qgate_agent.llm import Ask, LangChainModel, Mode
 from qgate_agent.nodes import Deps
+from qgate_core import otel
 from qgate_core.auth import Role, mint
 from qgate_core.health import ok, serve
+from qgate_core.logs import configure_logging
 from qgate_core.settings import Settings
 
 log = logging.getLogger("agent")
@@ -42,7 +44,8 @@ class AgentSettings(Settings):
 
 
 def main() -> None:
-    logging.basicConfig(level="INFO")
+    configure_logging()
+    otel.configure("agent")
     s = AgentSettings()
     service_token = mint("agent", Role.SERVICE, s.jwt_secret)
     blips = httpx.HTTPTransport(retries=3)  # connect-level retries; 5xx policy lives in tools.mes

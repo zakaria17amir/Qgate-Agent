@@ -12,8 +12,9 @@ import psycopg
 from confluent_kafka import Message, Producer
 from pydantic import BaseModel
 
-from qgate_core import kafka, metrics
+from qgate_core import kafka, metrics, otel
 from qgate_core.health import health_app, ok, serve
+from qgate_core.logs import configure_logging
 from qgate_core.models import TOPIC, BuildEvent, EolResult, LineRecord, Measurement
 from qgate_core.settings import Settings
 from qgate_ingest.upsert import upsert
@@ -71,7 +72,8 @@ def _as_line_record(record: BaseModel) -> LineRecord:
 
 
 def main() -> None:
-    logging.basicConfig(level="INFO")
+    configure_logging()
+    otel.configure("ingest")
     settings = Settings()
     threading.Thread(target=serve, args=(app,), daemon=True).start()
     run(settings)

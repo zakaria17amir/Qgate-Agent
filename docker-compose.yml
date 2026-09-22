@@ -28,6 +28,38 @@ x-healthcheck-http: &hc-http
   retries: 6
   start_period: 20s
 
+# Langfuse v3 needs the same ~30 settings on web and worker (ADR-013). Dev credentials only.
+x-langfuse-env: &langfuse-env
+  DATABASE_URL: postgresql://langfuse:langfuse@langfuse-db:5432/langfuse
+  NEXTAUTH_URL: http://localhost:3001
+  NEXTAUTH_SECRET: dev-only-change-me
+  SALT: dev-only-change-me
+  ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
+  TELEMETRY_ENABLED: "false"
+  CLICKHOUSE_MIGRATION_URL: clickhouse://clickhouse:9000
+  CLICKHOUSE_URL: http://clickhouse:8123
+  CLICKHOUSE_USER: clickhouse
+  CLICKHOUSE_PASSWORD: clickhouse
+  CLICKHOUSE_CLUSTER_ENABLED: "false"
+  LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
+  LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
+  LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: minio
+  LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: miniosecret
+  LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://minio:9000
+  LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
+  LANGFUSE_S3_EVENT_UPLOAD_PREFIX: events/
+  LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: langfuse
+  LANGFUSE_S3_MEDIA_UPLOAD_REGION: auto
+  LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID: minio
+  LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY: miniosecret
+  LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: http://minio:9000
+  LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE: "true"
+  LANGFUSE_S3_MEDIA_UPLOAD_PREFIX: media/
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  REDIS_AUTH: myredissecret
+
+
 services:
   # ---------------------------------------------------------------- infrastructure
   redpanda:
@@ -271,6 +303,8 @@ services:
       - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on: [prometheus]
 
+  # Langfuse v3: web + worker over Postgres, ClickHouse, Redis and MinIO (its own storage; nothing
+  # of ours). Traces arrive over OTLP at /api/public/otel (ADR-013). Dev credentials only.
   langfuse-db:
     image: postgres:16.4
     profiles: [obs]
@@ -280,18 +314,79 @@ services:
       POSTGRES_PASSWORD: langfuse
     volumes:
       - langfuse-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U langfuse"]
+      <<: *hc-http
 
-  langfuse:
-    image: langfuse/langfuse:2.93.0
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.12.11.4
+    profiles: [obs]
+    user: "101:101"
+    environment:
+      CLICKHOUSE_DB: default
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: clickhouse
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1"]
+      <<: *hc-http
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    profiles: [obs]
+    entrypoint: sh
+    command: -c 'mkdir -p /data/langfuse && minio server --address ":9000" /data'
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: miniosecret
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      <<: *hc-http
+
+  redis:
+    image: redis:7.4.10
+    profiles: [obs]
+    command: --requirepass myredissecret --maxmemory-policy noeviction
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      <<: *hc-http
+
+  langfuse-worker:
+    image: langfuse/langfuse-worker:4.35.0
+    profiles: [obs]
+    environment: *langfuse-env
+    depends_on: &langfuse-deps
+      langfuse-db: { condition: service_healthy }
+      clickhouse: { condition: service_healthy }
+      minio: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  langfuse-web:
+    image: langfuse/langfuse:4.35.0
     profiles: [obs]
     ports: ["3001:3000"]
     environment:
-      DATABASE_URL: postgresql://langfuse:langfuse@langfuse-db:5432/langfuse
-      NEXTAUTH_URL: http://localhost:3001
-      NEXTAUTH_SECRET: dev-only-change-me
-      SALT: dev-only-change-me
-      TELEMETRY_ENABLED: "false"
-    depends_on: [langfuse-db]
+      <<: *langfuse-env
+      # the keys in .env are provisioned on first start, so a fresh volume (CI) has the same ones
+      LANGFUSE_INIT_ORG_ID: qgate
+      LANGFUSE_INIT_ORG_NAME: qgate
+      LANGFUSE_INIT_PROJECT_ID: qgate-agent
+      LANGFUSE_INIT_PROJECT_NAME: qgate-agent
+      LANGFUSE_INIT_PROJECT_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
+      LANGFUSE_INIT_PROJECT_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
+      LANGFUSE_INIT_USER_EMAIL: ${LANGFUSE_INIT_USER_EMAIL:-admin@example.com}
+      LANGFUSE_INIT_USER_NAME: admin
+      LANGFUSE_INIT_USER_PASSWORD: ${LANGFUSE_INIT_USER_PASSWORD:-change-me-please}
+    depends_on: *langfuse-deps
+    healthcheck:  # next binds the container IP (its HOSTNAME), not loopback
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://$$HOSTNAME:3000/api/public/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 90s   # ClickHouse + Postgres migrations on first start
 
   # ---------------------------------------------------------------- orchestration
   prefect-server:
@@ -340,5 +435,7 @@ volumes:
   postgres-data:
   prometheus-data:
   langfuse-data:
+  clickhouse-data:
+  minio-data:
   ollama-data:
   sim-data:

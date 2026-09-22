@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Any, Protocol
 
 from qgate_agent.tools.models import BenchResult, DriftResult
+from qgate_core import otel
 
 
 class HttpGetter(Protocol):
@@ -12,6 +13,7 @@ class HttpGetter(Protocol):
     def get(self, url: str, *, params: dict[str, str]) -> Any: ...
 
 
+@otel.traced("tool.drift")
 def check_station_drift(
     client: HttpGetter, station_id: str, characteristic_id: str, start: datetime, end: datetime
 ) -> DriftResult:
@@ -29,6 +31,7 @@ def check_station_drift(
     return DriftResult.model_validate(r.json())
 
 
+@otel.traced("tool.bench")
 def check_bench(
     client: HttpGetter, bench_id: str, characteristic_id: str, start: datetime, end: datetime
 ) -> BenchResult:

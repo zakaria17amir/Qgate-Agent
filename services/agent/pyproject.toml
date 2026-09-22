@@ -12,7 +12,6 @@ dependencies = [
     "langchain-openai>=1.6,<2",
     "langchain-anthropic>=1.7,<2",
     "langchain-ollama>=1.1,<2",
-    "langfuse>=4.15,<5",
     "fastapi>=0.141,<1",
     "uvicorn[standard]>=0.53,<1",
     "psycopg[binary,pool]>=3.3,<4",

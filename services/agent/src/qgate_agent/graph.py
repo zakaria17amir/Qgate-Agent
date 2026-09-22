@@ -15,14 +15,20 @@ from langgraph.graph.state import CompiledStateGraph
 
 from qgate_agent.nodes import Deps, make_nodes, route
 from qgate_agent.state import TriageState
+from qgate_core import otel
 
 Node = Callable[[TriageState], dict[str, Any]]
 
 
 def _timed(name: str, fn: Node) -> Node:
+    """Every node is a span (design §11) and a timing in state (the audit row's latency split)."""
+
     def wrapped(s: TriageState) -> dict[str, Any]:
         t0 = time.perf_counter()
-        update = fn(s)
+        with otel.span(
+            f"node.{name}", node=name, thread_id=s.get("thread_id"), golden_id=s.get("golden_id")
+        ):
+            update = fn(s)
         ms = (time.perf_counter() - t0) * 1000
         timings = {**s.get("timings_ms", {}), **update.get("timings_ms", {}), name: round(ms, 1)}
         return {**update, "timings_ms": timings}

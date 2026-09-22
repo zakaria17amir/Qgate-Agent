@@ -16,8 +16,9 @@ from datetime import datetime
 
 import numpy as np
 
-from qgate_core import kafka
+from qgate_core import kafka, otel
 from qgate_core.health import health_app, ok, serve
+from qgate_core.logs import configure_logging
 from qgate_core.models import AlertKind, Measurement, QualityAlert, Severity
 from qgate_core.settings import Settings
 from qgate_detect.spc import western_electric
@@ -93,6 +94,7 @@ def run(
 
 
 def main() -> None:
-    logging.basicConfig(level="INFO")
+    configure_logging()
+    otel.configure("detect-worker")
     threading.Thread(target=serve, args=(app,), daemon=True).start()
     run(Settings())

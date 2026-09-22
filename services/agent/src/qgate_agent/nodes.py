@@ -37,7 +37,7 @@ from qgate_agent.tools import (
 )
 from qgate_agent.tools.detect_client import HttpGetter
 from qgate_agent.tools.mes import Breaker, post_hold
-from qgate_core import metrics
+from qgate_core import metrics, otel
 from qgate_core.pricing import Usage, cost_usd
 
 BREAKER = Breaker()  # one per process: every triage worker learns the MES is down at once
@@ -441,7 +441,10 @@ def _ask[S: BaseModel](
     """Call the model through the cassette layer; return the answer and the state update that
     accounts for its time and tokens (nodes must *return* updates, not mutate state)."""
     t0 = time.perf_counter()
-    answer, usage = deps.ask(prompt_id, PROMPT_VERSION, inputs, schema)
+    with otel.span(f"llm.{prompt_id}", prompt_id=prompt_id, prompt_version=PROMPT_VERSION) as sp:
+        answer, usage = deps.ask(prompt_id, PROMPT_VERSION, inputs, schema)
+        sp.set_attribute("prompt_tokens", usage.prompt_tokens)
+        sp.set_attribute("completion_tokens", usage.completion_tokens)
     metrics.LLM_TOKENS.labels(kind="prompt", prompt_id=prompt_id).inc(usage.prompt_tokens)
     metrics.LLM_TOKENS.labels(kind="completion", prompt_id=prompt_id).inc(usage.completion_tokens)
     acct = {

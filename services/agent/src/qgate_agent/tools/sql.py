@@ -14,10 +14,11 @@ from qgate_agent.tools.models import (
     StationSpec,
     StationVisit,
 )
-from qgate_core import metrics
+from qgate_core import metrics, otel
 from qgate_core.sql import queries
 
 
+@otel.traced("tool.genealogy")
 def get_vehicle_genealogy(conn: psycopg.Connection, vin: str) -> Genealogy:
     """Every station the vehicle passed, in build order, with measurements, lots and shift."""
     with metrics.GENEALOGY_QUERY_SECONDS.time():
@@ -43,6 +44,7 @@ def get_vehicle_genealogy(conn: psycopg.Connection, vin: str) -> Genealogy:
     return Genealogy(vin=vin, visits=visits, eol=eol)
 
 
+@otel.traced("tool.station_spec")
 def get_station_spec(conn: psycopg.Connection, station_id: str) -> StationSpec:
     q = queries("station")
     row = q.station_spec(conn, station_id=station_id)
@@ -65,6 +67,7 @@ def get_station_spec(conn: psycopg.Connection, station_id: str) -> StationSpec:
     )
 
 
+@otel.traced("tool.correlate")
 def find_correlated_failures(
     conn: psycopg.Connection,
     fault_code: str,
