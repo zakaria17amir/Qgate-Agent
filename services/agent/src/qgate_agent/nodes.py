@@ -10,9 +10,8 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Protocol
 
-import httpx
 from langgraph.types import interrupt
 from psycopg_pool import ConnectionPool
 from pydantic import BaseModel
@@ -46,12 +45,19 @@ LOOKBACK = timedelta(days=3)  # how far back correlation and drift look from the
 PROMPT_VERSION = "1"
 
 
+class HttpClient(Protocol):
+    """The slice of ``httpx.Client`` the nodes use; Starlette's TestClient satisfies it too."""
+
+    def post(self, url: str, *, json: Any = None, headers: Any = None) -> Any: ...
+    def patch(self, url: str, *, json: Any = None) -> Any: ...
+
+
 @dataclass
 class Deps:
     ro: ConnectionPool  # agent_ro: the tools cannot write
     detect: HttpGetter
-    api: httpx.Client  # service token
-    mes: httpx.Client  # the plant's system, its own API key
+    api: HttpClient  # service token
+    mes: HttpClient  # the plant's system, its own API key
     ask: Ask
     fault_map: dict[str, Any]
 
@@ -184,11 +190,17 @@ def make_nodes(deps: Deps) -> dict[str, Callable[[TriageState], dict[str, Any]]]
         h = s["hypotheses"][0]
         start, end = s["eol_ts"] - LOOKBACK, s["eol_ts"] + timedelta(minutes=1)
         d = check_station_drift(deps.detect, h.station_id, h.characteristic_id, start, end)
-        eol = s["genealogy"].eol
-        bench_id = eol.bench_id if eol else "INLINE"
-        eol_char = s["genealogy"].visits[-1].measurements[0].characteristic_id
-        b = check_bench(deps.detect, bench_id, eol_char, start, end)
-        return {"drift": d, "bench": b}
+        # the bench is judged on the EOL characteristics this vehicle actually failed; one
+        # untrustworthy reading is enough to distrust the verdict
+        g = s["genealogy"]
+        bench_id = g.eol.bench_id if g.eol else "INLINE"
+        eol_meas = g.visits[-1].measurements
+        chars = [m.characteristic_id for m in eol_meas if m.out_of_tolerance] or [
+            eol_meas[0].characteristic_id
+        ]
+        results = [check_bench(deps.detect, bench_id, c, start, end) for c in dict.fromkeys(chars)]
+        bench = next((b for b in results if not b.capable), results[0])
+        return {"drift": d, "bench": bench}
 
     def bound(s: TriageState) -> dict[str, Any]:
         with deps.ro.connection() as conn:
@@ -228,8 +240,9 @@ def make_nodes(deps: Deps) -> dict[str, Callable[[TriageState], dict[str, Any]]]
             text = f"Hold {len(b.vins)} vehicle(s) — station {b.station_id}, {scope}. " + text
         return {"draft_order": text, **acct}
 
-    def gate(s: TriageState) -> dict[str, Any]:
-        """Submit, then stop. Nothing continues without a human decision (ADR-003)."""
+    def submit(s: TriageState) -> dict[str, Any]:
+        """Write the proposal. Its own node: a node that interrupts re-runs from its first line
+        on resume, so any side effect before ``interrupt()`` would happen twice."""
         b = s["bounds"]
         r = deps.api.post(
             "/internal/containments",
@@ -249,14 +262,18 @@ def make_nodes(deps: Deps) -> dict[str, Callable[[TriageState], dict[str, Any]]]
             },
         )
         r.raise_for_status()
-        cid = r.json()["containment_id"]
-        decision = interrupt({"containment_id": cid, "draft_order": s["draft_order"]})
+        return {"containment_id": r.json()["containment_id"], "outcome": "PROPOSED"}
+
+    def gate(s: TriageState) -> dict[str, Any]:
+        """Stop. Nothing continues without a human decision (ADR-003). Side-effect free."""
+        decision = interrupt(
+            {"containment_id": s["containment_id"], "draft_order": s["draft_order"]}
+        )
         human = HumanDecision.model_validate(decision)
-        bounds = b
+        bounds = s["bounds"]
         if human.decision == "AMEND" and human.bounds is not None:
             bounds = human.bounds.model_copy(update={"vins": _with(human.bounds.vins, s["vin"])})
         return {
-            "containment_id": cid,
             "human": human,
             "bounds": bounds,
             "outcome": "REJECTED" if human.decision == "REJECT" else "PROPOSED",
@@ -330,6 +347,7 @@ def make_nodes(deps: Deps) -> dict[str, Callable[[TriageState], dict[str, Any]]]
         "drift_check": drift_check,
         "bound": bound,
         "compose": compose,
+        "submit": submit,
         "gate": gate,
         "commit": commit,
         "bench_alert": bench_alert,

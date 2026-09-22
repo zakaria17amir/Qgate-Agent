@@ -5,9 +5,10 @@ Two independent questions, both in half-tolerance units (tolerance width = 2):
 * **Repeatability** (``%GRR``): from repeat readings of the same vehicle, the gauge's own scatter
   as a share of the tolerance band. AIAG MSA convention: ``6 * sigma_gauge / tolerance * 100``,
   acceptable below 30 %.
-* **Bias vs peers**: mean deviation this bench reports minus what its sibling benches report
-  over the same window. Benches rotate per vehicle, so the populations are comparable; a
-  bench that reads 0.9 half-tolerance higher than its peers is failing good cars.
+* **Bias vs peers**: mean deviation this bench reports minus what its *closest* sibling bench
+  reports over the same recent span. Benches rotate per vehicle, so the populations are
+  comparable; a bench that reads 0.9 half-tolerance higher than every peer is failing good
+  cars, while a bench that agrees with at least one peer is not the one that moved.
 
 A drifting bench keeps its repeatability and moves its bias, which is why %GRR alone is not the
 verdict. Thresholds are stated assumptions; see ``docs/metrology.md``.
@@ -22,6 +23,9 @@ TOLERANCE_WIDTH = 2.0  # half-tolerance units: from -1 to +1
 GRR_THRESHOLD_PCT = 30.0  # AIAG: < 10 % good, 10-30 % marginal, > 30 % unacceptable
 BIAS_THRESHOLD = 0.5  # half-tolerance units; half the band is an obvious systematic error
 MIN_VALUES = 30  # fewer own readings than this and we do not claim anything
+RECENT = (
+    100  # bias is judged on the latest readings: a bench that drifted last shift is biased *now*
+)
 
 
 @dataclass(frozen=True)
@@ -42,9 +46,13 @@ def capability(
     bench_id: str,
     repeats: dict[str, list[float]],
     own: NDArray[np.floating],
-    peers: NDArray[np.floating],
+    peers: dict[str, NDArray[np.floating]],
 ) -> BenchCapability:
-    """Judge a bench from its repeat readings (per VIN) and its readings versus peer benches."""
+    """Judge a bench from its repeat readings (per VIN) and its readings versus peer benches.
+
+    ``own`` and each peer series must be in time order; only the most recent ``RECENT`` readings
+    enter the bias, so old good history cannot dilute a recent drift.
+    """
     groups = [np.asarray(v) for v in repeats.values() if len(v) >= 2]
     grr = sigma_gauge = None
     if groups:
@@ -66,7 +74,11 @@ def capability(
             method="insufficient-data",
         )
 
-    bias = float(np.mean(own) - np.mean(peers)) if len(peers) else None
+    own_mean = float(np.mean(own[-RECENT:]))
+    # consensus: the peer that agrees with us most decides; with a single peer this is a plain
+    # comparison and cannot say which of the two moved (see docs/metrology.md)
+    diffs = [own_mean - float(np.mean(p[-RECENT:])) for p in peers.values() if len(p)]
+    bias = min(diffs, key=abs) if diffs else None
     repeatable = grr is None or grr < GRR_THRESHOLD_PCT
     unbiased = bias is None or abs(bias) < BIAS_THRESHOLD
     return BenchCapability(

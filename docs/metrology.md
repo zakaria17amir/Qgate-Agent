@@ -14,7 +14,7 @@ readings be trusted in this time window?*
 | Check | Question | Statistic | Threshold (assumption) |
 |---|---|---|---|
 | Repeatability | Does the gauge agree with itself? | `%GRR = 6·σ_gauge / tolerance · 100`, σ_gauge pooled within-vehicle std of repeat readings (`repeat_no > 1`) | `< 30 %` acceptable (AIAG MSA convention: <10 good, 10–30 marginal, >30 unacceptable) |
-| Bias vs peers | Does the gauge agree with its siblings? | mean(own deviations) − mean(peer deviations), half-tolerance units, same window | `|bias| < 0.5` half-tolerance |
+| Bias vs peers | Does the gauge agree with any sibling *now*? | mean(own) − mean(**closest** peer bench) over the **most recent 100** readings each, half-tolerance units | `|bias| < 0.5` half-tolerance |
 
 `capable = repeatable AND unbiased`. With fewer than 30 own readings the verdict is
 `insufficient-data` and **not** capable — absence of evidence is not capability.
@@ -29,8 +29,10 @@ from its peers by half the tolerance band is therefore measuring *itself*, not t
 Limits of this reasoning, stated plainly:
 
 - With a **single bench** there are no peers; only a reference-part check would work.
-- If two of three benches drifted together, the one honest bench would look biased. The
-  scenario set does not exercise this; a real plant would add a periodic master-part check.
+- The bias is taken against the *closest* peer, so one drifted bench cannot make a good bench
+  look biased. The price: if two of three benches drifted **together**, the honest one would
+  be blamed. The scenario set does not exercise this; a real plant adds a master-part check.
+- With only **two** benches the rule cannot say which one moved; it only says they disagree.
 - Peer comparison detects **bias**, not **linearity** or **stability** — the other MSA
   properties are out of scope here.
 

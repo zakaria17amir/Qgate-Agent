@@ -10,7 +10,7 @@ import threading
 import time
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Annotated, Any
+from typing import Annotated, Any, Protocol
 
 import httpx
 from confluent_kafka import Producer
@@ -34,8 +34,14 @@ class ApiSettings(Settings):
     agent_base_url: str = "http://agent:8001"
 
 
+class AgentClient(Protocol):
+    """What the api needs from the agent: a way to resume a waiting thread."""
+
+    def post(self, url: str, *, json: Any = None) -> Any: ...
+
+
 def build_app(
-    settings: ApiSettings, agent: httpx.Client | None, producer: Producer | None
+    settings: ApiSettings, agent: AgentClient | None, producer: Producer | None
 ) -> FastAPI:
     app = health_app("api")
     pool = ConnectionPool(settings.database_url, min_size=1, max_size=8, open=True)
@@ -107,14 +113,14 @@ def build_app(
             raise HTTPException(409, "containment is not awaiting a decision")
         announce(row, d.actor)
         if agent is not None:
+            bounds = {
+                k: row[k] for k in ("kind", "station_id", "window_start", "window_end", "lot_ids")
+            }
             resume = {
                 "decision": d.action,
                 "actor": d.actor,
                 "reason": d.reason,
-                "bounds": {
-                    k: row[k] for k in ("station_id", "window_start", "window_end", "lot_ids")
-                }
-                | {"vins": row["vins"]},
+                "bounds": {**bounds, "vins": row["vins"]},
             }
             r = agent.post(f"/threads/{row['thread_id']}/resume", json=_jsonable(resume))
             if r.status_code >= 300:

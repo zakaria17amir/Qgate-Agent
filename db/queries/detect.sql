@@ -22,9 +22,11 @@ where bench_id = :bench_id
 order by vin, repeat_no;
 
 -- name: bench_primary_values(characteristic_id, start, end)
--- Primary readings for one EOL characteristic across all benches, to compare a bench to its peers.
+-- Primary readings for one EOL characteristic across all benches, in time order, to compare a
+-- bench's recent readings to its peers'.
 select bench_id, deviation / ((upper_limit - lower_limit) / 2) as dev
 from qgate.fact_measurement
 where characteristic_id = :characteristic_id
   and repeat_no = 1
-  and measured_at >= :start and measured_at < :end;
+  and measured_at >= :start and measured_at < :end
+order by measured_at, id;

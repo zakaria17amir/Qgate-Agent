@@ -67,6 +67,19 @@ def test_bench_endpoint_blames_the_drifting_bench_only(pg_url: str, client: Test
     assert good["capable"] is True and bad["grr_pct"] is not None
 
 
+def test_bench_bias_is_judged_on_recent_readings_not_diluted_by_history(
+    pg_url: str, client: TestClient
+) -> None:
+    """The agent asks up to the trigger. A drift that started late must still show."""
+    load(pg_url, "bench_drift")
+    mid = (EPOCH + timedelta(seconds=(1150 + 29) * 60)).isoformat()  # trigger around seq 1150
+    bad = client.get(
+        "/bench/EOL-B2/capability",
+        params={"characteristic_id": "CH-30-HEADLAMP", "from": START, "to": mid},
+    ).json()
+    assert bad["capable"] is False, bad
+
+
 def test_unknown_characteristic_is_a_404(client: TestClient) -> None:
     r = client.get(
         "/drift",

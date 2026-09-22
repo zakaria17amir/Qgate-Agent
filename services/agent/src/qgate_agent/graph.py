@@ -44,7 +44,8 @@ def build_graph(
     g.add_edge("correlate", "drift_check")
     g.add_conditional_edges("drift_check", route, ["bench_alert", "escalate", "bound"])
     g.add_edge("bound", "compose")
-    g.add_edge("compose", "gate")
+    g.add_edge("compose", "submit")
+    g.add_edge("submit", "gate")
     # after the human: a rejection ends the thread; anything else writes to the plant
     g.add_conditional_edges(
         "gate", lambda s: "report" if s["outcome"] == "REJECTED" else "commit", ["report", "commit"]

@@ -65,8 +65,11 @@ def build_api(settings: Settings) -> FastAPI:
                     conn, characteristic_id=characteristic_id, start=from_, end=to
                 )
             )
-        own = np.array([float(d) for b, d in values if b == bench_id])
-        peers = np.array([float(d) for b, d in values if b != bench_id])
+        by_bench: dict[str, list[float]] = defaultdict(list)
+        for b, d in values:
+            by_bench[b].append(float(d))
+        own = np.array(by_bench.pop(bench_id, []))
+        peers = {b: np.array(v) for b, v in by_bench.items()}
         return asdict(capability(bench_id, dict(repeats), own, peers))
 
     return app
