@@ -7,6 +7,7 @@ from pathlib import Path
 import httpx
 import psycopg
 import pytest
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.waiting_utils import wait_for_logs
 from testcontainers.postgres import PostgresContainer
@@ -66,3 +67,16 @@ def kafka_settings() -> Iterator[Settings]:
         yield Settings(
             kafka_bootstrap="localhost:29092", schema_registry_url="http://localhost:28081"
         )
+
+
+@pytest.fixture(scope="session")
+def spans() -> "InMemorySpanExporter":
+    """The process-wide tracer with an in-memory exporter. OTel accepts one provider per process,
+    so every test module that looks at spans shares this one and ``clear()``s it first."""
+    from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+
+    from qgate_core import otel
+
+    exporter = InMemorySpanExporter()
+    otel.configure("tests", exporter)
+    return exporter

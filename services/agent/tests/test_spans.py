@@ -5,16 +5,8 @@ from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanE
 
 from qgate_agent.graph import _timed
 from qgate_agent.state import TriageState
-from qgate_core import otel
 
 pytestmark = pytest.mark.unit
-
-
-@pytest.fixture(scope="module")
-def spans() -> InMemorySpanExporter:
-    exporter = InMemorySpanExporter()
-    otel.configure("agent-test", exporter)
-    return exporter
 
 
 def test_a_node_runs_inside_a_span_named_after_it(spans: InMemorySpanExporter) -> None:

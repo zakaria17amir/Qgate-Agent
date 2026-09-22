@@ -30,16 +30,16 @@ def test_keys_become_basic_auth_to_the_otlp_endpoint(monkeypatch: pytest.MonkeyP
     assert exporter._headers["Authorization"] == "Basic cGstbGYtMTpzay1sZi0y"
 
 
-def test_span_records_attributes(in_memory: InMemorySpanExporter) -> None:
-    in_memory.clear()
+def test_span_records_attributes(spans: InMemorySpanExporter) -> None:
+    spans.clear()
     with otel.span("node.intake", thread_id="t-1", golden_id=None, n=3):
         pass
-    (s,) = in_memory.get_finished_spans()
+    (s,) = spans.get_finished_spans()
     assert s.name == "node.intake"
     assert dict(s.attributes or {}) == {"thread_id": "t-1", "n": 3}  # None is dropped
 
 
-def test_log_lines_are_json_with_the_active_trace_id(in_memory: InMemorySpanExporter) -> None:
+def test_log_lines_are_json_with_the_active_trace_id(spans: InMemorySpanExporter) -> None:
     record = logging.LogRecord("agent", logging.INFO, __file__, 1, "hello %s", ("world",), None)
     with otel.span("node.report"):
         ctx = trace.get_current_span().get_span_context()
@@ -47,11 +47,3 @@ def test_log_lines_are_json_with_the_active_trace_id(in_memory: InMemorySpanExpo
     assert line["msg"] == "hello world" and line["level"] == "INFO" and line["logger"] == "agent"
     assert line["trace_id"] == format(ctx.trace_id, "032x")
     assert "trace_id" not in json.loads(JsonFormatter().format(record))  # outside a span: absent
-
-
-@pytest.fixture(scope="module")
-def in_memory() -> InMemorySpanExporter:
-    """One provider per process (OTel ignores a second set_tracer_provider), so module-scoped."""
-    exporter = InMemorySpanExporter()
-    otel.configure("test", exporter)
-    return exporter
