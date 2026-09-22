@@ -11,6 +11,7 @@ from qgate_core import kafka
 from qgate_core.models import BuildEvent, LineRecord, Measurement
 from qgate_core.settings import Settings
 from qgate_generator.line import Line
+from qgate_generator.load import copy_run, truncate_facts
 from qgate_generator.scenario import Scenario
 from qgate_generator.seed import seed_dims
 from qgate_generator.stream import Run, generate
@@ -70,6 +71,27 @@ def truth(scenario: str = typer.Option(...), scenarios_dir: Path = SCENARIOS) ->
             indent=1,
         )
     )
+
+
+@app.command()
+def load(
+    scenario: str = typer.Option(..., help="Scenario id, e.g. tool_wear"),
+    seed: int | None = typer.Option(None, help="Override the scenario's seed"),
+    vehicles: int | None = typer.Option(None),
+    database_url: str = typer.Option(..., envvar="DATABASE_URL"),
+    truncate: bool = typer.Option(True, help="Empty the fact tables first"),
+    scenarios_dir: Path = SCENARIOS,
+) -> None:
+    """COPY a scenario straight into Postgres (no Kafka). For demos and tests."""
+    line = Line.load(scenarios_dir / "line.yaml")
+    s = Scenario.load(scenarios_dir / f"{scenario}.yaml", line)
+    updates = {k: v for k, v in {"seed": seed, "vehicles": vehicles}.items() if v is not None}
+    run = generate(line, s.model_copy(update=updates))
+    with psycopg.connect(database_url) as conn:
+        if truncate:
+            truncate_facts(conn)
+        copy_run(conn, run)
+    typer.echo(f"{len(run.events)} events loaded")
 
 
 @app.command(name="seed-dims")
