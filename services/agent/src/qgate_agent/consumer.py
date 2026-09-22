@@ -19,7 +19,8 @@ GROUP = "agent-triage"
 
 def run(settings: Settings, app: FastAPI, idle_timeout: float | None = None) -> None:
     kafka.ensure_topics(settings)
-    c = kafka.consumer(settings, GROUP, ["line.eol.results"])
+    # a freshly deployed agent triages failures from now on, not the whole history
+    c = kafka.consumer(settings, GROUP, ["line.eol.results"], offset_reset="latest")
     local = TestClient(app)  # in-process call into our own HTTP layer
     while True:
         msg = kafka.poll(c, timeout=idle_timeout or 1.0)

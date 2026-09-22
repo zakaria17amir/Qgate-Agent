@@ -1,0 +1,22 @@
+{
+ "inputs": {
+  "evidence": "0 other vehicles with the same code; drift NONE (LOW); bench capable True",
+  "fault_codes": "F-03, F-19",
+  "kind": "SINGLE",
+  "scope": "this vehicle only",
+  "station_id": "ST-03",
+  "station_name": "Roof join",
+  "vin": "SYN00000000001938",
+  "vin_count": 1
+ },
+ "model": "claude-haiku-4-5",
+ "output": {
+  "text": "CONTAINMENT ORDER - SINGLE\n\nHold vehicle SYN00000000001938 at ST-03 (Roof join). This vehicle failed end-of-line test with fault codes F-03 and F-19; no other vehicles show the same codes, drift is LOW, and the station is capable of repair. Before proceeding, inspect the roof join weld quality and check for gaps or misalignment at the seam. Do not release this vehicle until faults are resolved and re-test is passed."
+ },
+ "prompt_id": "compose",
+ "usage": {
+  "completion_tokens": 142,
+  "prompt_tokens": 810
+ },
+ "version": "1"
+}

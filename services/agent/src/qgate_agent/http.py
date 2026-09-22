@@ -5,8 +5,8 @@ so the request returns at once; state lives in the checkpointer, not in this pro
 """
 
 import logging
-import threading
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from typing import Any
 
@@ -35,10 +35,14 @@ class ResumeRequest(BaseModel):
     bounds: Bounds | None = None  # amended bounds, when AMEND
 
 
+WORKERS = 4  # concurrent triages; the rest queue — a burst on the line must not starve /health
+
+
 def build_http(
     graph: CompiledStateGraph[Any, Any, Any, Any], run_in_thread: bool = True
 ) -> FastAPI:
     app = health_app("agent")
+    pool = ThreadPoolExecutor(max_workers=WORKERS, thread_name_prefix="triage")
 
     def run(thread_id: str, payload: Any) -> None:
         try:
@@ -48,7 +52,7 @@ def build_http(
 
     def start(thread_id: str, payload: Any) -> None:
         if run_in_thread:
-            threading.Thread(target=run, args=(thread_id, payload), daemon=True).start()
+            pool.submit(run, thread_id, payload)
         else:
             run(thread_id, payload)
 

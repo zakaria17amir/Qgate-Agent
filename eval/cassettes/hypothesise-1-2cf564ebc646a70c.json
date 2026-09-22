@@ -1,0 +1,29 @@
+{
+ "inputs": {
+  "candidates": "- ST-19 ['CH-19-TORQUE'] prior 0.7: Steering column: the characteristic is measured here\n- ST-17 ['CH-17-TORQUE', 'CH-17-GAP'] prior 0.3: cockpit module seating sets the column bracket position",
+  "fault_codes": "F-19",
+  "oot_stations": "ST-19",
+  "vin": "SYN00000000001620"
+ },
+ "model": "claude-haiku-4-5",
+ "output": {
+  "ranked": [
+   {
+    "characteristic_id": "CH-19-TORQUE",
+    "reasoning": "ST-19 had an out-of-tolerance measurement in the build record and is where the steering column torque characteristic is directly measured, making it the most likely source of fault F-19.",
+    "station_id": "ST-19"
+   },
+   {
+    "characteristic_id": "CH-17-TORQUE",
+    "reasoning": "ST-17 had no out-of-tolerance measurements recorded, so while it can indirectly affect column bracket position, the evidence does not support it as the fault source.",
+    "station_id": "ST-17"
+   }
+  ]
+ },
+ "prompt_id": "hypothesise",
+ "usage": {
+  "completion_tokens": 193,
+  "prompt_tokens": 956
+ },
+ "version": "1"
+}

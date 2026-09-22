@@ -47,13 +47,16 @@ def producer(settings: Settings) -> Producer:
     )
 
 
-def consumer(settings: Settings, group: str, topics: list[str]) -> Consumer:
+def consumer(
+    settings: Settings, group: str, topics: list[str], offset_reset: str = "earliest"
+) -> Consumer:
+    """``offset_reset`` applies only when the group has no committed offset yet."""
     c = Consumer(
         {
             "bootstrap.servers": settings.kafka_bootstrap,
             "group.id": group,
             "enable.auto.commit": False,
-            "auto.offset.reset": "earliest",
+            "auto.offset.reset": offset_reset,
         }
     )
     c.subscribe(topics)

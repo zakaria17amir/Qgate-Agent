@@ -1,0 +1,22 @@
+{
+ "inputs": {
+  "evidence": "53 other vehicles with the same code; drift DRIFT (MEDIUM); bench capable True",
+  "fault_codes": "F-19",
+  "kind": "WINDOW",
+  "scope": "2026-01-05 22:50 to 2026-01-06 01:48 UTC",
+  "station_id": "ST-19",
+  "station_name": "Steering column",
+  "vin": "SYN00000000001159",
+  "vin_count": 178
+ },
+ "model": "claude-haiku-4-5",
+ "output": {
+  "text": "CONTAINMENT ORDER - WINDOW\n\nHold 178 vehicles produced at ST-19 (Steering column) between 2026-01-05 22:50 and 2026-01-06 01:48 UTC. Vehicle SYN00000000001159 failed end-of-line test with code F-19, and 53 other vehicles show the same failure code indicating a systematic steering column defect with medium drift. Do not release these vehicles until the station is verified and corrected. First, inspect the steering column assembly fixture at ST-19 for mechanical wear, calibration drift, or tooling misalignment that may cause the F-19 failure mode."
+ },
+ "prompt_id": "compose",
+ "usage": {
+  "completion_tokens": 180,
+  "prompt_tokens": 830
+ },
+ "version": "1"
+}
