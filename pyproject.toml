@@ -21,6 +21,10 @@ members = [
 [tool.uv.sources]
 qgate-core = { workspace = true }
 qgate-generator = { workspace = true }
+qgate-mock-mes = { workspace = true }
+qgate-detect = { workspace = true }
+qgate-api = { workspace = true }
+qgate-agent = { workspace = true }
 
 [dependency-groups]
 dev = [

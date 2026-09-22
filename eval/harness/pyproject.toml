@@ -6,6 +6,12 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
     "qgate-core",
     "qgate-generator",
+    "langgraph-checkpoint-postgres>=3.1,<4",
+    "psycopg[binary,pool]>=3.3,<4",
+    "qgate-mock-mes",
+    "qgate-detect",
+    "qgate-api",
+    "qgate-agent",
     "httpx>=0.28,<1",
     "pyyaml>=6,<7",
     "typer>=0.27,<1",

@@ -2446,9 +2446,15 @@ version = "0.1.0"
 source = { editable = "eval/harness" }
 dependencies = [
     { name = "httpx" },
+    { name = "langgraph-checkpoint-postgres" },
+    { name = "psycopg", extra = ["binary", "pool"] },
     { name = "pyyaml" },
+    { name = "qgate-agent" },
+    { name = "qgate-api" },
     { name = "qgate-core" },
+    { name = "qgate-detect" },
     { name = "qgate-generator" },
+    { name = "qgate-mock-mes" },
     { name = "rich" },
     { name = "typer" },
 ]
@@ -2456,9 +2462,15 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "httpx", specifier = ">=0.28,<1" },
+    { name = "langgraph-checkpoint-postgres", specifier = ">=3.1,<4" },
+    { name = "psycopg", extras = ["binary", "pool"], specifier = ">=3.3,<4" },
     { name = "pyyaml", specifier = ">=6,<7" },
+    { name = "qgate-agent", editable = "services/agent" },
+    { name = "qgate-api", editable = "services/api" },
     { name = "qgate-core", editable = "packages/qgate-core" },
+    { name = "qgate-detect", editable = "services/detect" },
     { name = "qgate-generator", editable = "packages/qgate-generator" },
+    { name = "qgate-mock-mes", editable = "services/mock-mes" },
     { name = "rich", specifier = ">=15,<16" },
     { name = "typer", specifier = ">=0.27,<1" },
 ]
