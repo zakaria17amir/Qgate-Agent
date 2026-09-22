@@ -46,3 +46,14 @@ def test_alerts_are_keyed_by_station() -> None:
     )
     assert key_of(a) == "ST-22"
     assert a.evidence == {} and a.estimated_onset is None
+
+
+def test_containment_state_enum_matches_avro_and_the_table() -> None:
+    """Every state the api can write must be announceable: the enum, the Avro symbols and the
+    table's check constraint name the same set (COMMIT_PENDING was missing from two of three)."""
+    from qgate_core.avro import load_schema
+    from qgate_core.models import State
+
+    field = next(f for f in load_schema("quality.containment")["fields"] if f["name"] == "state")
+    assert set(field["type"]["symbols"]) == {s.value for s in State}
+    assert "COMMIT_PENDING" in {s.value for s in State}

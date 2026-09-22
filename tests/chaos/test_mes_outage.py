@@ -6,6 +6,8 @@ from typing import Any
 import httpx
 import pytest
 
+from chaos.conftest import committed
+
 pytestmark = pytest.mark.chaos
 
 
@@ -18,6 +20,7 @@ def test_outage_mid_commit_yields_exactly_one_hold(
 ) -> None:
     row = triage_to_gate("drift-03")
     cid = row["containment_id"]
+    committed_before = committed(api)
     holds_before = mes.get("/_stats").json()["holds"]
 
     toxiproxy.post("/proxies/mock-mes", json={"enabled": False}).raise_for_status()
@@ -35,4 +38,8 @@ def test_outage_mid_commit_yields_exactly_one_hold(
         timeout_s=150,
         every_s=5,
     )
-    assert mes.get("/_stats").json()["holds"] == holds_before + 1
+    # exactly one hold per containment that reached COMMITTED meanwhile (the sweeper may also
+    # finish rows left over from earlier runs), and this containment's hold is its own
+    final = api.get(f"/containments/{cid}").json()
+    assert mes.get("/_stats").json()["holds"] - holds_before == committed(api) - committed_before
+    assert mes.get(f"/v1/holds/{final['mes_ref']}").json()["external_ref"] == cid

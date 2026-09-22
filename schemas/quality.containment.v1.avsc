@@ -6,7 +6,7 @@
   "fields": [
     { "name": "containment_id", "type": "string" },
     { "name": "thread_id", "type": "string", "doc": "LangGraph thread that produced the proposal" },
-    { "name": "state", "type": { "type": "enum", "name": "State", "symbols": ["PROPOSED", "APPROVED", "AMENDED", "REJECTED", "EXPIRED", "COMMITTED", "ESCALATED"] } },
+    { "name": "state", "type": { "type": "enum", "name": "State", "symbols": ["PROPOSED", "APPROVED", "AMENDED", "REJECTED", "EXPIRED", "COMMIT_PENDING", "COMMITTED", "ESCALATED"], "default": "PROPOSED" } },
     { "name": "occurred_at", "type": { "type": "long", "logicalType": "timestamp-millis" } },
     { "name": "actor", "type": "string", "doc": "'agent' for PROPOSED/ESCALATED, JWT sub for human decisions, 'system' for EXPIRED" },
     { "name": "station_id", "type": ["null", "string"], "default": null },

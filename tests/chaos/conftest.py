@@ -38,6 +38,7 @@ def api() -> httpx.Client:
         base_url=os.environ.get("CHAOS_API_URL", "http://localhost:8000"),
         headers={"Authorization": f"Bearer {token}"},
         timeout=30,
+        transport=httpx.HTTPTransport(retries=3),  # pooled connections die when containers churn
     )
 
 
@@ -60,9 +61,15 @@ def pg_url() -> str:
 def compose() -> Callable[..., None]:
     def run(*args: str) -> None:
         cmd = ["docker", "compose", "--profile", "core", "--profile", "chaos", *args]
-        subprocess.run(cmd, check=True)
+        # same interpolation as `make chaos`, or `up -d agent` would recreate it bypassing toxiproxy
+        env = {**os.environ, "MES_BASE_URL": "http://toxiproxy:8003"}
+        subprocess.run(cmd, check=True, env=env)
 
     return run
+
+
+def committed(api: httpx.Client) -> int:
+    return len(api.get("/containments", params={"state": "COMMITTED"}).json())
 
 
 def wait_for(pred: Callable[[], bool], timeout_s: float, every_s: float = 1.0) -> None:

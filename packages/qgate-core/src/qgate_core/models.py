@@ -34,6 +34,7 @@ class State(StrEnum):
     AMENDED = "AMENDED"
     REJECTED = "REJECTED"
     EXPIRED = "EXPIRED"
+    COMMIT_PENDING = "COMMIT_PENDING"  # approved; plant system unavailable, retrying
     COMMITTED = "COMMITTED"
     ESCALATED = "ESCALATED"
 

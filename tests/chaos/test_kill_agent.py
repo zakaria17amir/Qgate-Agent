@@ -7,6 +7,8 @@ import httpx
 import psycopg
 import pytest
 
+from chaos.conftest import committed
+
 pytestmark = pytest.mark.chaos
 
 
@@ -20,6 +22,7 @@ def test_agent_restart_mid_gate_loses_nothing(
 ) -> None:
     row = triage_to_gate("drift-05")
     cid = row["containment_id"]
+    committed_before = committed(api)
     holds_before = mes.get("/_stats").json()["holds"]
 
     compose("kill", "agent")
@@ -28,7 +31,11 @@ def test_agent_restart_mid_gate_loses_nothing(
 
     api.post(f"/containments/{cid}/approve", json={}).raise_for_status()
     wait(lambda: api.get(f"/containments/{cid}").json()["state"] == "COMMITTED", timeout_s=60)
-    assert mes.get("/_stats").json()["holds"] == holds_before + 1
+    # exactly one hold per containment that reached COMMITTED meanwhile (the sweeper may also
+    # finish rows left over from earlier runs), and this containment's hold is its own
+    final = api.get(f"/containments/{cid}").json()
+    assert mes.get("/_stats").json()["holds"] - holds_before == committed(api) - committed_before
+    assert mes.get(f"/v1/holds/{final['mes_ref']}").json()["external_ref"] == cid
     with psycopg.connect(pg_url) as conn:
         n = conn.execute(
             "select count(*) from qgate.containment where thread_id = %s", (row["thread_id"],)
