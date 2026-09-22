@@ -1,14 +1,19 @@
 """Tools backed by the detect service over HTTP; any ``httpx.Client`` works (TestClient too)."""
 
 from datetime import datetime
-
-import httpx
+from typing import Any, Protocol
 
 from qgate_agent.tools.models import BenchResult, DriftResult
 
 
+class HttpGetter(Protocol):
+    """The slice of ``httpx.Client`` we use; Starlette's TestClient satisfies it too."""
+
+    def get(self, url: str, *, params: dict[str, str]) -> Any: ...
+
+
 def check_station_drift(
-    client: httpx.Client, station_id: str, characteristic_id: str, start: datetime, end: datetime
+    client: HttpGetter, station_id: str, characteristic_id: str, start: datetime, end: datetime
 ) -> DriftResult:
     """Was this characteristic drifting or stepping in the window, and since when?"""
     r = client.get(
@@ -25,7 +30,7 @@ def check_station_drift(
 
 
 def check_bench(
-    client: httpx.Client, bench_id: str, characteristic_id: str, start: datetime, end: datetime
+    client: HttpGetter, bench_id: str, characteristic_id: str, start: datetime, end: datetime
 ) -> BenchResult:
     """Can this bench's readings of the characteristic be trusted in the window?"""
     r = client.get(

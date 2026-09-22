@@ -38,9 +38,37 @@ def test_ramp_onset_is_where_parts_plausibly_start_failing() -> None:
     dev += ramp
     v = detect_change(dev)
     assert v.verdict is Verdict.DRIFT
-    # earliest plausibly-defective: ramp + 2 sigma crosses 1.0 -> ramp = 0.667 -> index 1000
-    assert v.onset_index is not None and abs(v.onset_index - 1000) <= 25
+    # observed first out-of-tolerance point lies near where ramp + 2 sigma crosses 1.0 (~1000)
+    assert v.onset_index is not None and abs(v.onset_index - 1000) <= 40
     assert v.severity == "HIGH"
+
+
+def test_drift_onset_is_the_first_observed_out_of_tolerance_point() -> None:
+    """When parts have already failed, the data says who failed first; no extrapolation needed."""
+    dev = noise(1500, 5)
+    dev += np.clip((np.arange(1500) - 800) / 600, 0, None) * 2.0
+    first_oot = int(np.argmax((dev >= 1.0) & (np.arange(1500) > 850)))
+    v = detect_change(dev)
+    assert v.verdict is Verdict.DRIFT and v.onset_index == first_oot
+    assert v.evidence["onset_method"] == 1.0  # observed, not extrapolated
+
+
+def test_a_lone_early_defect_is_not_mistaken_for_the_onset() -> None:
+    dev = noise(1500, 6)
+    dev += np.clip((np.arange(1500) - 800) / 600, 0, None) * 2.0
+    dev[840] = 1.4  # one random defect while the ramp is still far from the band
+    v = detect_change(dev)
+    assert v.verdict is Verdict.DRIFT and v.onset_index is not None and v.onset_index > 900
+
+
+def test_ramp_that_plateaus_is_still_located_from_its_rising_part() -> None:
+    """Real tool wear stops rising when the tool is replaced or the ramp saturates."""
+    dev = noise(2000, 4)
+    ramp = np.clip((np.arange(2000) - 800) / 600, 0, 1) * 2.0  # rises 800..1400, flat after
+    dev += ramp
+    v = detect_change(dev)
+    assert v.verdict is Verdict.DRIFT
+    assert v.onset_index is not None and abs(v.onset_index - 1000) <= 40
 
 
 def test_verdict_is_deterministic() -> None:

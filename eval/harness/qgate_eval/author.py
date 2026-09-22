@@ -83,7 +83,8 @@ def _case(family: Family, seed: int, scenario: Scenario, run: Run) -> Golden:
 
     elif family is Family.LOT:
         carriers = sorted(truth.by_inject[0], key=seq)
-        vin = carriers[min(4, len(carriers) - 1)]
+        # deep enough into the lot that earlier carriers have reached EOL and failed too
+        vin = carriers[min(40, len(carriers) - 1)]
         expected = Expected(
             decision=Decision.LOT,
             station_id=scenario.injects[0].station_id,

@@ -3,7 +3,7 @@ family: lot
 scenario: bad_lot
 seed: 3
 trigger:
-  vin: SYN00000000000104
+  vin: SYN00000000000324
   fault_codes:
   - F-24
 expected:
