@@ -9,9 +9,9 @@ from typing import Any
 
 import yaml
 from fastapi.testclient import TestClient
-from langgraph.checkpoint.postgres import PostgresSaver
 from psycopg_pool import ConnectionPool
 
+from qgate_agent.checkpoint import saver
 from qgate_agent.graph import build_graph
 from qgate_agent.http import build_http
 from qgate_agent.llm import Ask, StructuredModel
@@ -24,7 +24,7 @@ from qgate_detect.api import build_api as build_detect
 from qgate_mock_mes.main import build_app as build_mes
 
 ROOT = Path(__file__).parents[3]
-SECRET = "in-process-secret"  # noqa: S105 — never leaves this process
+SECRET = "in-process-secret-long-enough-for-hs256-0123456789"  # noqa: S105 — never leaves this process
 
 
 class _LazyAgent:
@@ -49,11 +49,8 @@ class Stack:
         api_settings = ApiSettings(database_url=pg_url, jwt_secret=SECRET, approval_timeout_s=600)
         self.agent: TestClient | None = None
         self.api = TestClient(build_api(api_settings, agent=_LazyAgent(self), producer=None))
-        self._saver_cm = PostgresSaver.from_conn_string(
-            pg_url + "?options=-c%20search_path%3Dcheckpoint"
-        )
+        self._saver_cm = saver(pg_url)
         self.saver = self._saver_cm.__enter__()
-        self.saver.setup()
         self.ro = ConnectionPool(pg_url, min_size=1, max_size=4, open=True)
         self.fault_map = yaml.safe_load(
             (ROOT / "knowledge" / "fault_map.yaml").read_text(encoding="utf8")

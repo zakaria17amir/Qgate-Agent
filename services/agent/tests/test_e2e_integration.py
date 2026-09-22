@@ -12,35 +12,21 @@ from typing import Any
 
 import psycopg
 import pytest
-import yaml
-from fastapi.testclient import TestClient
-from langgraph.checkpoint.postgres import PostgresSaver
-from psycopg_pool import ConnectionPool
 from pydantic import BaseModel
 
-from qgate_agent.graph import build_graph
-from qgate_agent.http import build_http
-from qgate_agent.llm import Ask
-from qgate_agent.nodes import Deps
 from qgate_agent.state import Explanation, Hypotheses, Hypothesis, Order
-from qgate_api.main import ApiSettings
-from qgate_api.main import build_app as build_api_app
-from qgate_core.auth import Role, mint
 from qgate_core.pricing import Usage
-from qgate_core.settings import Settings
-from qgate_detect.api import build_api as build_detect
 from qgate_eval.golden import Golden
+from qgate_eval.stack import Stack
 from qgate_generator.line import Line
 from qgate_generator.load import copy_run, truncate_facts
 from qgate_generator.scenario import Scenario
 from qgate_generator.seed import seed_dims
 from qgate_generator.stream import generate
-from qgate_mock_mes.main import build_app as build_mes
 
 pytestmark = pytest.mark.integration
 ROOT = Path(__file__).parents[3]
 LINE = Line.load(ROOT / "scenarios" / "line.yaml")
-SECRET = "e2e-secret"
 
 
 class FakeModel:
@@ -70,66 +56,13 @@ class FakeModel:
         return out, Usage(prompt_tokens=100, completion_tokens=30)
 
 
-class Stack:
-    def __init__(self, pg_url: str) -> None:
-        self.pg_url = pg_url
-        settings = Settings(database_url=pg_url)
-        self.mes = TestClient(
-            build_mes(api_key="k", chaos_enabled=True), headers={"X-API-Key": "k"}
-        )
-        self.detect = TestClient(build_detect(settings))
-        self.api_settings = ApiSettings(
-            database_url=pg_url, jwt_secret=SECRET, approval_timeout_s=600
-        )
-        self.agent: TestClient | None = None
-        self.api = TestClient(build_api_app(self.api_settings, agent=_Lazy(self), producer=None))
-        self.checkpointer = PostgresSaver.from_conn_string(
-            pg_url + "?options=-c%20search_path%3Dcheckpoint"
-        )
-        self.saver = self.checkpointer.__enter__()
-        self.saver.setup()
-        self.ro = ConnectionPool(pg_url, min_size=1, max_size=4, open=True)
-        self.start_agent()
-
-    def start_agent(self) -> None:
-        """A fresh graph + HTTP app on the same checkpointer — what a process restart looks like."""
-        deps = Deps(
-            ro=self.ro,
-            detect=self.detect,
-            api=TestClient(
-                self.api.app,
-                headers={"Authorization": f"Bearer {mint('agent', Role.SERVICE, SECRET)}"},
-            ),
-            mes=self.mes,
-            ask=Ask("live", ROOT / "eval" / "cassettes", FakeModel()),
-            fault_map=yaml.safe_load(
-                (ROOT / "knowledge" / "fault_map.yaml").read_text(encoding="utf8")
-            ),
-        )
-        self.agent = TestClient(build_http(build_graph(deps, self.saver), run_in_thread=False))
-
-    def human(self, role: Role = Role.APPROVER) -> dict[str, str]:
-        return {"Authorization": f"Bearer {mint('alice', role, SECRET)}"}
-
-
-class _Lazy:
-    """api -> agent client that resolves at call time, so the agent can be replaced mid-test."""
-
-    def __init__(self, stack: Stack) -> None:
-        self.stack = stack
-
-    def post(self, url: str, *, json: Any = None) -> Any:
-        assert self.stack.agent is not None
-        return self.stack.agent.post(url, json=json)
-
-
 @pytest.fixture(scope="module")
 def stack(pg_url: str) -> Iterator[Stack]:
     with psycopg.connect(pg_url) as conn:
         seed_dims(conn, LINE)
-    s = Stack(pg_url)
+    s = Stack(pg_url, FakeModel(), "live", ROOT / "eval" / "cassettes")
     yield s
-    s.checkpointer.__exit__(None, None, None)
+    s.close()
 
 
 def load_golden(stack: Stack, golden_id: str) -> Golden:
