@@ -38,6 +38,7 @@ class AgentSettings(Settings):
     llm_provider: str = "anthropic"
     llm_model: str = "claude-haiku-4-5"
     llm_api_key: str | None = None
+    llm_base_url: str | None = None  # air-gapped profile: the host's Ollama
     llm_mode: Mode = "replay"
     cassette_dir: Path = Path("/workspace/eval/cassettes")
     fault_map_path: Path = Path("/knowledge/fault_map.yaml")
@@ -65,7 +66,9 @@ def main() -> None:
             transport=blips,
         ),
         ask=Ask(
-            s.llm_mode, s.cassette_dir, LangChainModel(s.llm_model, s.llm_provider, s.llm_api_key)
+            s.llm_mode,
+            s.cassette_dir,
+            LangChainModel(s.llm_model, s.llm_provider, s.llm_api_key, s.llm_base_url),
         ),
         fault_map=yaml.safe_load(s.fault_map_path.read_text(encoding="utf8")),
     )

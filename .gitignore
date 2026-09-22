@@ -47,3 +47,5 @@ Thumbs.db
 console/tsconfig.tsbuildinfo
 console/e2e/.tokens.json
 loadtest/case.json
+eval/site/
+eval/metrics.json

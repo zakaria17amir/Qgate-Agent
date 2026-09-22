@@ -25,6 +25,7 @@ qgate-mock-mes = { workspace = true }
 qgate-detect = { workspace = true }
 qgate-api = { workspace = true }
 qgate-agent = { workspace = true }
+qgate-eval = { workspace = true }
 
 [dependency-groups]
 dev = [

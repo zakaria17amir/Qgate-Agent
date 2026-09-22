@@ -1,4 +1,5 @@
-# On a version tag: multi-arch images to GHCR with SBOMs, and a GitHub release carrying the eval report.
+# On a version tag: multi-arch images to GHCR with SBOM + provenance, and a GitHub release carrying
+# the evaluation report. A tag with a suffix (v0.1.0-rc1) is a pre-release, never "latest".
 name: release
 
 on:
@@ -14,8 +15,19 @@ jobs:
   images:
     runs-on: ubuntu-24.04
     strategy:
+      fail-fast: false
       matrix:
-        service: [line-sim, ingest, detect, agent, api, mock-mes, console, pipelines]
+        include:
+          # the six Python services share one Dockerfile and differ by workspace package + entrypoint
+          - { service: ingest, package: qgate-ingest, entrypoint: ingest }
+          - { service: detect, package: qgate-detect, entrypoint: detect }
+          - { service: agent, package: qgate-agent, entrypoint: agent }
+          - { service: api, package: qgate-api, entrypoint: api }
+          - { service: mock-mes, package: qgate-mock-mes, entrypoint: mock-mes }
+          - { service: gen, package: qgate-generator, entrypoint: qgate-gen }
+          - { service: pipelines, package: qgate-pipelines, entrypoint: prefect }
+          - { service: line-sim, dockerfile: services/line-sim/Dockerfile }
+          - { service: console, context: ./console, dockerfile: console/Dockerfile }
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
@@ -31,17 +43,22 @@ jobs:
           images: ghcr.io/${{ github.repository_owner }}/qgate-${{ matrix.service }}
           tags: |
             type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ !contains(github.ref_name, '-') }}
       - uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.service == 'console' && './console' || '.' }}
-          file: ${{ matrix.service == 'console' && 'console/Dockerfile' || matrix.service == 'pipelines' && 'pipelines/Dockerfile' || format('services/{0}/Dockerfile', matrix.service) }}
+          context: ${{ matrix.context || '.' }}
+          file: ${{ matrix.dockerfile || 'docker/python.Dockerfile' }}
+          build-args: |
+            PACKAGE=${{ matrix.package }}
+            ENTRYPOINT=${{ matrix.entrypoint }}
           platforms: linux/amd64,linux/arm64
           push: true
           sbom: true
-          provenance: true
+          provenance: mode=max
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,scope=${{ matrix.service }},mode=max
 
   release:
     needs: [images]
@@ -51,5 +68,9 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          body_path: eval/report.md
           files: |
             eval/baseline.json
+            eval/report.md
+            eval/load.json

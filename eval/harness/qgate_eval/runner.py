@@ -1,6 +1,7 @@
 """Run the goldens through the in-process stack and score them (docs/eval.md)."""
 
 import logging
+import os
 from collections.abc import Callable
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -16,7 +17,9 @@ from qgate_generator.scenario import Scenario
 from qgate_generator.stream import Run, generate
 
 log = logging.getLogger("eval")
-ROOT = Path(__file__).parents[3]
+ROOT = Path(
+    os.environ.get("QGATE_ROOT", Path(__file__).parents[3])
+)  # repo, or /workspace in an image
 LINE = Line.load(ROOT / "scenarios" / "line.yaml")
 
 

@@ -1,36 +1,49 @@
 # Live-model evaluation. Costs money (~$0.20 per run on claude-haiku-4-5), so it runs on demand
-# only: Actions -> nightly -> Run workflow. Publishes the numbers the README shows.
+# only: Actions -> nightly -> Run workflow. Publishes the numbers to GitHub Pages (source: Actions).
 name: nightly
 
 on:
   workflow_dispatch:
 
+concurrency: nightly
+
 jobs:
   eval-live:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
-    permissions: { contents: write }
+    env:
+      LLM_PROVIDER: ${{ vars.LLM_PROVIDER }}
+      LLM_MODEL: ${{ vars.LLM_MODEL }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      LLM_MODE: live
+      LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+      LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v10.1.0
-        with: { version: "0.12.17" }
       - run: cp .env.example .env
-      - run: make up-all
-        env:
-          LLM_PROVIDER: ${{ vars.LLM_PROVIDER }}
-          LLM_MODEL: ${{ vars.LLM_MODEL }}
-          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
-          LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
-          LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
-      - run: docker compose --profile eval run --rm prefect-worker prefect deployment run 'nightly-eval/nightly-eval' --watch
+      # the eval profile alone: prefect + eval-db + worker; the in-process harness needs no core stack
+      - run: docker compose --profile eval up -d --build --wait prefect-server eval-db prefect-worker
+      - run: docker compose --profile eval run --rm prefect-deploy
+      - run: docker compose --profile eval run --rm prefect-deploy deployment run 'nightly-eval/nightly-eval' --param mode=live --watch
+      - run: docker compose --profile eval run --rm prefect-deploy deployment run 'publish-report/publish-report' --watch
       - uses: actions/upload-artifact@v4
         with:
           name: nightly-report
           path: |
             eval/report.md
             eval/metrics.json
-      - name: publish to gh-pages
-        run: docker compose --profile eval run --rm prefect-worker prefect deployment run 'publish-report/publish-report' --watch
-        env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: eval/site }
       - if: always()
-        run: make down
+        run: docker compose --profile eval logs prefect-worker --tail 200 && docker compose --profile eval down -v
+
+  deploy:
+    needs: [eval-live]
+    runs-on: ubuntu-24.04
+    permissions: { pages: write, id-token: write }
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

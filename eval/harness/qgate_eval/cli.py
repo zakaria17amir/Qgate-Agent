@@ -13,7 +13,9 @@ from rich.table import Table
 app = typer.Typer(add_completion=False)
 console = Console()
 LATENCY_SLACK_MS = 500
-ROOT = Path(__file__).parents[3]
+ROOT = Path(
+    os.environ.get("QGATE_ROOT", Path(__file__).parents[3])
+)  # repo, or /workspace in an image
 
 
 @app.callback()

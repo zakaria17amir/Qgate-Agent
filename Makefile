@@ -10,7 +10,7 @@ CHAOS          := --profile chaos
 LOAD           := --profile load
 DEMO           := --profile demo
 
-.PHONY: help up up-infra up-all down logs ps demo chaos chaos-test load \
+.PHONY: help up up-infra up-all up-airgap down logs ps demo chaos chaos-test load flows \
         install lint fmt typecheck unit contract integration eval-replay eval-live scan build console-e2e \
         token migrate goldens-freeze clean
 
@@ -27,6 +27,10 @@ up-infra: ## infra only: redpanda, postgres, migrations
 
 up-all: ## core + observability + prefect
 	$(COMPOSE) $(CORE) $(OBS) $(EVAL) up -d --build
+
+up-airgap: ## core with the agent on a native Ollama (install Ollama, `ollama pull qwen2.5:7b`, then this)
+	$(COMPOSE) $(CORE) up -d --build --scale agent=0
+	$(COMPOSE) $(CORE) --profile airgap up -d --build agent-airgap
 
 down: ## stop everything and drop volumes
 	$(COMPOSE) $(CORE) $(OBS) $(EVAL) $(CHAOS) $(DEMO) down -v --remove-orphans
@@ -99,6 +103,14 @@ integration: ## testcontainers: Postgres + Redpanda end to end
 
 eval-replay: ## golden cases with recorded LLM responses; compare to eval/baseline.json (needs Docker)
 	LLM_MODEL=$${LLM_MODEL:-claude-haiku-4-5} uv run qgate-eval run --mode replay --baseline eval/baseline.json --report eval/report.md
+
+flows: ## register and run the Prefect flows locally: replay-scenario, nightly-eval (replay), publish-report
+	$(COMPOSE) $(CORE) $(EVAL) up -d --build --wait prefect-server eval-db prefect-worker
+	$(COMPOSE) $(CORE) $(EVAL) run --rm prefect-deploy
+	$(COMPOSE) $(CORE) $(EVAL) run --rm prefect-deploy deployment run 'replay-scenario/replay-scenario' --param scenario=clean_baseline --watch
+	$(COMPOSE) $(CORE) $(EVAL) run --rm prefect-deploy deployment run 'nightly-eval/nightly-eval' --param mode=replay --watch
+	$(COMPOSE) $(CORE) $(EVAL) run --rm prefect-deploy deployment run 'publish-report/publish-report' --watch
+	@echo "prefect ui: http://localhost:4200   site: eval/site/index.html"
 
 eval-live: ## golden cases against the live model (costs money; nightly)
 	uv run qgate-eval run --mode live --report eval/report.md

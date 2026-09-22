@@ -33,11 +33,15 @@ class StructuredModel(Protocol):
 class LangChainModel:
     """Any provider ``init_chat_model`` knows, at temperature 0, forced into a Pydantic schema."""
 
-    def __init__(self, model: str, provider: str, api_key: str | None) -> None:
+    def __init__(
+        self, model: str, provider: str, api_key: str | None, base_url: str | None = None
+    ) -> None:
         self.name = model
         kwargs: dict[str, Any] = {"temperature": 0}
         if api_key:
             kwargs["api_key"] = api_key
+        if base_url:  # a local model server (the air-gapped profile's Ollama)
+            kwargs["base_url"] = base_url
         self._chat = init_chat_model(model, model_provider=provider, **kwargs)
 
     def invoke(self, prompt: str, schema: type[BaseModel]) -> tuple[BaseModel, Usage]:

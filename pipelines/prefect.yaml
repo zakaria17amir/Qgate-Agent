@@ -1,22 +1,20 @@
 name: qgate-pipelines
-prefect-version: 3.0.10
+prefect-version: 3.8.6
 
 pull:
   - prefect.deployments.steps.set_working_directory:
       directory: /workspace/pipelines
 
+# No schedules: the live evaluation costs provider credit and runs on demand (Actions -> nightly).
 deployments:
   - name: replay-scenario
     entrypoint: flows/replay_scenario.py:replay_scenario
     work_pool: { name: qgate }
-    parameters: { scenario: clean_baseline, speed: 10, seed: 42 }
+    parameters: { scenario: clean_baseline, speed: 0 }
 
   - name: nightly-eval
     entrypoint: flows/nightly_eval.py:nightly_eval
     work_pool: { name: qgate }
-    schedules:
-      - cron: "0 2 * * *"
-        timezone: UTC
     parameters: { mode: live }
 
   - name: publish-report

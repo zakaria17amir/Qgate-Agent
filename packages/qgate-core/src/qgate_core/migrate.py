@@ -4,11 +4,12 @@ The compose ``migrate`` container is the production path; this exists so a throw
 can be brought to the same schema without a dbmate binary.
 """
 
+import os
 from pathlib import Path
 
 import psycopg
 
-ROOT = Path(__file__).parents[4]
+ROOT = Path(os.environ.get("QGATE_ROOT", Path(__file__).parents[4]))  # repo, or /workspace
 MIGRATIONS = ROOT / "db" / "migrations"
 
 

@@ -46,6 +46,31 @@ def reachable(settings: Settings, timeout: float = 2.0) -> None:
     AdminClient({"bootstrap.servers": settings.kafka_bootstrap}).list_topics(timeout=timeout)
 
 
+def group_lag(settings: Settings, group: str, topics: list[str]) -> int:
+    """Messages of ``topics`` a consumer group has not committed yet, over every partition —
+    asked of the broker directly, so a replay flow can wait on the exact number. A partition the
+    group never committed counts from its first message (the group's reset is ``earliest``)."""
+    from confluent_kafka import ConsumerGroupTopicPartitions, TopicPartition
+
+    admin = AdminClient({"bootstrap.servers": settings.kafka_bootstrap})
+    meta = admin.list_topics(timeout=10)
+    parts = [
+        TopicPartition(t, p) for t in topics if t in meta.topics for p in meta.topics[t].partitions
+    ]
+    fut = admin.list_consumer_group_offsets([ConsumerGroupTopicPartitions(group, parts)])[group]
+    committed = {(tp.topic, tp.partition): tp.offset for tp in fut.result().topic_partitions}
+    probe = Consumer({"bootstrap.servers": settings.kafka_bootstrap, "group.id": f"{group}-lag"})
+    try:
+        total = 0
+        for tp in parts:
+            low, high = probe.get_watermark_offsets(tp, timeout=10)
+            position = committed.get((tp.topic, tp.partition), -1)
+            total += max(0, high - (position if position >= 0 else low))
+        return total
+    finally:
+        probe.close()
+
+
 def producer(settings: Settings) -> Producer:
     return Producer(
         {"bootstrap.servers": settings.kafka_bootstrap, "enable.idempotence": True, "linger.ms": 20}

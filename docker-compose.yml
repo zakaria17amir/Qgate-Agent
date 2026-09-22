@@ -4,7 +4,7 @@
 #   obs    : Prometheus, Grafana, Langfuse
 #   eval   : Prefect server + worker (pipelines)
 #   chaos  : toxiproxy between agent and mock-mes
-#   airgap : Ollama for the local-model profile
+#   airgap : the agent pointed at a native Ollama on the host (local model, no cloud)
 #
 # Image digests are pinned in Phase 5 (release); tags are used while the skeleton is under construction.
 
@@ -63,7 +63,7 @@ x-langfuse-env: &langfuse-env
 services:
   # ---------------------------------------------------------------- infrastructure
   redpanda:
-    image: redpandadata/redpanda:v24.2.7
+    image: redpandadata/redpanda:v24.2.7@sha256:82a69763bef8d8b55ea5a520fa1b38f993908ef68946819ca1aed43541824c48
     profiles: [core]
     command:
       - redpanda start
@@ -84,7 +84,7 @@ services:
       <<: *hc-http
 
   postgres:
-    image: postgres:16.4
+    image: postgres:16.4@sha256:e62fbf9d3e2b49816a32c400ed2dba83e3b361e6833e624024309c35d334b412
     profiles: [core]
     environment:
       POSTGRES_DB: qgate
@@ -98,7 +98,7 @@ services:
       <<: *hc-http
 
   migrate:
-    image: amacneil/dbmate:2.19
+    image: amacneil/dbmate:2.19@sha256:84043c7409dec5494d861c3c1779adbe28a41a283cf8103e6c08f7b829f5563d
     profiles: [core]
     env_file: .env
     environment:
@@ -112,7 +112,7 @@ services:
       postgres: { condition: service_healthy }
 
   roles:
-    image: postgres:16.4
+    image: postgres:16.4@sha256:e62fbf9d3e2b49816a32c400ed2dba83e3b361e6833e624024309c35d334b412
     profiles: [core]
     environment:
       PGPASSWORD: ${POSTGRES_PASSWORD}
@@ -286,7 +286,7 @@ services:
 
   # ---------------------------------------------------------------- observability
   prometheus:
-    image: prom/prometheus:v2.54.1
+    image: prom/prometheus:v2.54.1@sha256:f6639335d34a77d9d9db382b92eeb7fc00934be8eae81dbc03b31cfe90411a94
     profiles: [obs]
     ports: ["9090:9090"]
     volumes:
@@ -295,7 +295,7 @@ services:
       - prometheus-data:/prometheus
 
   grafana:
-    image: grafana/grafana:11.2.2
+    image: grafana/grafana:11.2.2@sha256:d5133220d770aba5cb655147b619fa8770b90f41d8489a821d33b1cd34d16f89
     profiles: [obs]
     ports: ["3000:3000"]
     environment:
@@ -309,7 +309,7 @@ services:
   # Langfuse v3: web + worker over Postgres, ClickHouse, Redis and MinIO (its own storage; nothing
   # of ours). Traces arrive over OTLP at /api/public/otel (ADR-013). Dev credentials only.
   langfuse-db:
-    image: postgres:16.4
+    image: postgres:16.4@sha256:e62fbf9d3e2b49816a32c400ed2dba83e3b361e6833e624024309c35d334b412
     profiles: [obs]
     environment:
       POSTGRES_DB: langfuse
@@ -322,7 +322,7 @@ services:
       <<: *hc-http
 
   clickhouse:
-    image: clickhouse/clickhouse-server:25.12.11.4
+    image: clickhouse/clickhouse-server:25.12.11.4@sha256:8a790dd3468db22b1d4e7b18a176f378ff5ff6053b9c48dd4ea1fa71a24c5ba6
     profiles: [obs]
     user: "101:101"
     environment:
@@ -336,7 +336,7 @@ services:
       <<: *hc-http
 
   minio:
-    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
     profiles: [obs]
     entrypoint: sh
     command: -c 'mkdir -p /data/langfuse && minio server --address ":9000" /data'
@@ -350,7 +350,7 @@ services:
       <<: *hc-http
 
   redis:
-    image: redis:7.4.10
+    image: redis:7.4.10@sha256:e9b2e45ecd47fbb69b877cf8d045d5cccaaaed52524b6e098b4abe8212994f73
     profiles: [obs]
     command: --requirepass myredissecret --maxmemory-policy noeviction
     healthcheck:
@@ -358,7 +358,7 @@ services:
       <<: *hc-http
 
   langfuse-worker:
-    image: langfuse/langfuse-worker:4.35.0
+    image: langfuse/langfuse-worker:4.35.0@sha256:5e35e625a214dd868bb22adad90fc52e8f83cc856c3750e47f9a922622c207fb
     profiles: [obs]
     environment: *langfuse-env
     depends_on: &langfuse-deps
@@ -368,7 +368,7 @@ services:
       redis: { condition: service_healthy }
 
   langfuse-web:
-    image: langfuse/langfuse:4.35.0
+    image: langfuse/langfuse:4.35.0@sha256:a5d8d2457702ab7e051bc0788d73871970caebd10aae6635e87cfb736e4067cd
     profiles: [obs]
     ports: ["3001:3000"]
     environment:
@@ -393,14 +393,18 @@ services:
 
   # ---------------------------------------------------------------- orchestration
   prefect-server:
-    image: prefecthq/prefect:3.0.10-python3.12
+    image: prefecthq/prefect:3.8.6-python3.12@sha256:ec9e58deaf30002dd65ebb755ca3d9eb5f169902882abf18c79261a4aa95bfe3
     profiles: [eval]
     command: prefect server start --host 0.0.0.0
     ports: ["4200:4200"]
     environment:
-      PREFECT_API_DATABASE_CONNECTION_URL: postgresql+asyncpg://qgate_migrate:${POSTGRES_PASSWORD}@postgres:5432/prefect
+      # its tables live in eval-db's public schema; nothing of the pipeline touches the core Postgres
+      PREFECT_API_DATABASE_CONNECTION_URL: postgresql+asyncpg://qgate_migrate:${POSTGRES_PASSWORD}@eval-db:5432/qgate
     depends_on:
-      postgres: { condition: service_healthy }
+      eval-db: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request as u; u.urlopen('http://localhost:4200/api/health')\""]
+      <<: *hc-http
 
   prefect-worker:
     build: { context: ., dockerfile: docker/python.Dockerfile, args: { PACKAGE: qgate-pipelines, ENTRYPOINT: prefect } }
@@ -411,14 +415,54 @@ services:
     env_file: .env
     environment:
       PREFECT_API_URL: http://prefect-server:4200/api
+      EVAL_DATABASE_URL: postgresql://qgate_migrate:${POSTGRES_PASSWORD}@eval-db:5432/qgate
+      DATABASE_URL: postgres://qgate_migrate:${POSTGRES_PASSWORD}@postgres:5432/qgate   # replay_scenario counts rows
+      REPO_ON_HOST: ${PWD}
+      QGATE_ROOT: /workspace
+      QGATE_SCHEMAS_DIR: /workspace/schemas
+      # the live evaluation's model; the nightly workflow passes these from its secrets
+      LLM_MODE: ${LLM_MODE:-replay}
+      LLM_PROVIDER: ${LLM_PROVIDER:-anthropic}
+      LLM_MODEL: ${LLM_MODEL:-claude-haiku-4-5}
+      LLM_API_KEY: ${LLM_API_KEY:-}
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock   # replay_scenario spawns line-sim
+      - /var/run/docker.sock:/var/run/docker.sock   # replay_scenario spawns gen and line-sim
       - ./eval:/workspace/eval
-    depends_on: [prefect-server]
+      - ./scenarios:/workspace/scenarios:ro
+      - ./schemas:/workspace/schemas:ro
+      - ./knowledge:/knowledge:ro
+      - sim-data:/data:ro
+    depends_on:
+      prefect-server: { condition: service_started }
+      eval-db: { condition: service_healthy }
+
+  # registers the three deployments from pipelines/prefect.yaml; run once after the server is up
+  prefect-deploy:
+    image: ghcr.io/zakaria17amir/qgate-pipelines:dev
+    profiles: [eval]
+    restart: "no"
+    working_dir: /workspace/pipelines
+    command: ["deploy", "--all", "--prefect-file", "/workspace/pipelines/prefect.yaml"]
+    environment:
+      PREFECT_API_URL: http://prefect-server:4200/api
+    depends_on:
+      prefect-server: { condition: service_started }
+
+  # the evaluation's own database: the harness truncates fact tables, the demo's must survive
+  eval-db:
+    image: postgres:16.4@sha256:e62fbf9d3e2b49816a32c400ed2dba83e3b361e6833e624024309c35d334b412
+    profiles: [eval]
+    environment:
+      POSTGRES_DB: qgate
+      POSTGRES_USER: qgate_migrate
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qgate_migrate -d qgate"]
+      <<: *hc-http
 
   # ---------------------------------------------------------------- load
   k6:
-    image: grafana/k6:0.54.0
+    image: grafana/k6:0.54.0@sha256:1f40432b1cbe7234e977f96c362c9bc550a2d2b583d014dd8669fe40d3e9e755
     profiles: [load]
     command: ["run", "--summary-export", "/out/load.json", "/scripts/triage.js"]
     environment:
@@ -429,7 +473,7 @@ services:
 
   # ---------------------------------------------------------------- chaos
   toxiproxy:
-    image: ghcr.io/shopify/toxiproxy:2.9.0
+    image: ghcr.io/shopify/toxiproxy:2.9.0@sha256:b44c283298cea49e2defaba1b3028783798346f2a926684e3a345fd8441af3b8
     profiles: [chaos]
     ports: ["8474:8474"]
     volumes:
@@ -437,12 +481,35 @@ services:
     command: ["-config", "/config/toxiproxy.json", "-host", "0.0.0.0"]
 
   # ---------------------------------------------------------------- air-gapped
-  ollama:
-    image: ollama/ollama:0.3.12
+  # Ollama runs natively on the host (it owns the GPU there); this profile only re-points the
+  # agent at it. Wired, not yet exercised — see README. `make up-airgap`.
+  agent-airgap:
+    <<: *python-common
+    image: ghcr.io/zakaria17amir/qgate-agent:dev
     profiles: [airgap]
-    ports: ["11434:11434"]
+    environment:
+      <<: *python-env
+      PORT: "8001"
+      LLM_PROVIDER: ollama
+      LLM_MODEL: ${OLLAMA_MODEL:-qwen2.5:7b}
+      LLM_MODE: live
+      LLM_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      MES_BASE_URL: http://mock-mes:8003
+      CASSETTE_DIR: /tmp/cassettes
+      DATABASE_URL_AGENT_RO: postgres://agent_ro:${POSTGRES_PASSWORD}@postgres:5432/qgate
+      DATABASE_URL_CHECKPOINT_RW: postgres://checkpoint_rw:${POSTGRES_PASSWORD}@postgres:5432/qgate
+    extra_hosts: ["host.docker.internal:host-gateway"]
     volumes:
-      - ollama-data:/root/.ollama
+      - ./knowledge:/knowledge:ro
+      - ./schemas:/schemas:ro
+    depends_on:
+      redpanda: { condition: service_healthy }
+      roles: { condition: service_completed_successfully }
+      detect: { condition: service_healthy }
+      api: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8001/ready')"]
+      <<: *hc-http
 
 volumes:
   redpanda-data:
@@ -451,5 +518,4 @@ volumes:
   langfuse-data:
   clickhouse-data:
   minio-data:
-  ollama-data:
   sim-data:

@@ -4,6 +4,7 @@ Used by the eval harness and the agent's end-to-end tests. Compose runs the same
 separate containers; this wiring exists so `replay` needs neither compose nor Kafka.
 """
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -24,7 +25,9 @@ from qgate_core.settings import Settings
 from qgate_detect.api import build_api as build_detect
 from qgate_mock_mes.main import build_app as build_mes
 
-ROOT = Path(__file__).parents[3]
+ROOT = Path(
+    os.environ.get("QGATE_ROOT", Path(__file__).parents[3])
+)  # repo, or /workspace in an image
 SECRET = "in-process-secret-long-enough-for-hs256-0123456789"  # noqa: S105 — never leaves this process
 
 

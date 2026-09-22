@@ -81,3 +81,13 @@ def test_cost_comes_from_a_labelled_price_table() -> None:
         usd is not None and 0.5 <= usd <= 2.0
     )  # order-of-magnitude sanity; the table is an assumption
     assert cost_usd("unknown-model", Usage(prompt_tokens=10, completion_tokens=10)) is None
+
+
+def test_ollama_provider_points_at_the_configured_host() -> None:
+    """Air-gapped profile: a native Ollama on the host, reached via host.docker.internal."""
+    from qgate_agent.llm import LangChainModel
+
+    m = LangChainModel("qwen2.5:7b", "ollama", None, base_url="http://host.docker.internal:11434")
+    assert type(m._chat).__name__ == "ChatOllama"
+    assert m._chat.base_url == "http://host.docker.internal:11434"
+    assert m.name == "qwen2.5:7b"
