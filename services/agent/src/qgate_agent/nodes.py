@@ -36,8 +36,10 @@ from qgate_agent.tools import (
     vins_in_window,
 )
 from qgate_agent.tools.detect_client import HttpGetter
+from qgate_agent.tools.mes import Breaker, post_hold
 from qgate_core.pricing import Usage, cost_usd
 
+BREAKER = Breaker()  # one per process: every triage worker learns the MES is down at once
 NO_PATTERN = 1  # up to one earlier defect with the same code is noise, not a run (Gate 2)
 LOT_SHARE = 0.8  # siblings this concentrated in one lot make it a lot problem
 LOT_MIN = 3
@@ -288,12 +290,14 @@ def make_nodes(deps: Deps) -> dict[str, Callable[[TriageState], dict[str, Any]]]
         }
 
     def commit(s: TriageState) -> dict[str, Any]:
-        """The one write to the plant: idempotent on the containment id."""
+        """The one write to the plant: idempotent on the containment id, retried, behind a
+        breaker. "Not now" parks the containment instead of failing the thread."""
         b = s["bounds"]
-        r = deps.mes.post(
-            "/v1/holds",
-            headers={"Idempotency-Key": s["containment_id"]},
-            json={
+        r = post_hold(
+            deps.mes,
+            BREAKER,
+            s["containment_id"],
+            {
                 "external_ref": s["containment_id"],
                 "station_id": b.station_id,
                 "window_start": _iso(b.window_start),
@@ -303,10 +307,24 @@ def make_nodes(deps: Deps) -> dict[str, Callable[[TriageState], dict[str, Any]]]
                 "reason": s["draft_order"][:2000],
             },
         )
-        if r.status_code >= 500:
-            return {"outcome": "COMMIT_PENDING", "errors": [*s["errors"], f"mes {r.status_code}"]}
+        if r is None:
+            return {"outcome": "COMMIT_PENDING", "errors": [*s["errors"], "mes unavailable"]}
         r.raise_for_status()
         return {"mes_ref": r.json()["hold_ref"], "outcome": "COMMITTED"}
+
+    def pending(s: TriageState) -> dict[str, Any]:
+        """Tell the api the approved containment is parked; its sweeper will ask us to retry."""
+        deps.api.patch(
+            f"/internal/containments/{s['containment_id']}",
+            json={"state": "COMMIT_PENDING", "reason": s["errors"][-1]},
+        ).raise_for_status()
+        return {}
+
+    def retry_gate(s: TriageState) -> dict[str, Any]:
+        """Wait for the sweeper's RETRY. Side-effect free, like ``gate``; resuming re-runs
+        ``commit`` from its first line, which is exactly one more attempt."""
+        interrupt({"containment_id": s["containment_id"], "waiting": "mes"})
+        return {}
 
     def bench_alert(s: TriageState) -> dict[str, Any]:
         b = s["bench"]
@@ -358,6 +376,8 @@ def make_nodes(deps: Deps) -> dict[str, Callable[[TriageState], dict[str, Any]]]
         "submit": submit,
         "gate": gate,
         "commit": commit,
+        "pending": pending,
+        "retry_gate": retry_gate,
         "bench_alert": bench_alert,
         "escalate": escalate,
         "report": report,

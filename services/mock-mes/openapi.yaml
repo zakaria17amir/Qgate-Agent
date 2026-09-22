@@ -152,7 +152,7 @@ components:
       required: [mode, seconds]
       properties:
         mode: { type: string, enum: [latency, error, drop_ack] }
-        seconds: { type: integer, minimum: 1, maximum: 600 }
+        seconds: { type: integer, minimum: 0, maximum: 600, description: "0 clears the active fault" }
         status: { type: integer, default: 503 }
     Stats:
       type: object

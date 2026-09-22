@@ -52,7 +52,8 @@ class Stack:
         self.detect = TestClient(build_detect(settings))
         api_settings = ApiSettings(database_url=pg_url, jwt_secret=SECRET, approval_timeout_s=600)
         self.agent: TestClient | None = None
-        self.api = TestClient(build_api(api_settings, agent=_LazyAgent(self), producer=None))
+        self.api_app = build_api(api_settings, agent=_LazyAgent(self), producer=None)
+        self.api = TestClient(self.api_app)
         self._saver_cm = saver(pg_url)
         self.saver = self._saver_cm.__enter__()
         self.ro = ConnectionPool(pg_url, min_size=1, max_size=4, open=True)
@@ -75,6 +76,10 @@ class Stack:
             fault_map=self.fault_map,
         )
         self.agent = TestClient(build_http(build_graph(deps, self.saver), run_in_thread=False))
+
+    def sweep(self) -> None:
+        """One pass of the api's sweeper: expire stale gates, retry parked commits."""
+        self.api_app.state.sweep()
 
     def human(self, role: Role = Role.APPROVER, sub: str = "harness") -> dict[str, str]:
         return {"Authorization": f"Bearer {mint(sub, role, SECRET)}"}

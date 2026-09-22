@@ -1,4 +1,4 @@
-"""Wire the nine nodes into the triage graph (design §8.2) with a Postgres checkpointer.
+"""Wire the nodes into the triage graph (design §8.2) with a Postgres checkpointer.
 
 Every node is wrapped to record its wall time, so the audit row can split latency into model
 time and everything else. The gate node calls ``interrupt()``; with a checkpointer that means the
@@ -50,7 +50,14 @@ def build_graph(
     g.add_conditional_edges(
         "gate", lambda s: "report" if s["outcome"] == "REJECTED" else "commit", ["report", "commit"]
     )
-    g.add_edge("commit", "report")
+    # the plant system may be down: park, wait for the api's sweeper, try commit again
+    g.add_conditional_edges(
+        "commit",
+        lambda s: "pending" if s["outcome"] == "COMMIT_PENDING" else "report",
+        ["pending", "report"],
+    )
+    g.add_edge("pending", "retry_gate")
+    g.add_edge("retry_gate", "commit")
     g.add_edge("bench_alert", "report")
     g.add_edge("escalate", "report")
     g.add_edge("report", END)

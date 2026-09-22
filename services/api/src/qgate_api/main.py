@@ -178,27 +178,37 @@ def build_app(
     ) -> dict[str, Any]:
         return decide(cid, store.Decision(action="REJECT", actor=p.sub, reason=body.reason))
 
+    def resume(row: dict[str, Any], body: dict[str, Any]) -> None:
+        if agent is None:
+            return
+        r = agent.post(f"/threads/{row['thread_id']}/resume", json=body)
+        if r.status_code == 409:  # a worker is already on it (or it just finished); not an error
+            log.info("thread %s not waiting; skipped", row["thread_id"])
+        elif r.status_code >= 300:
+            log.error("resume of %s failed: %s %s", row["thread_id"], r.status_code, r.text)
+
+    def sweep() -> None:
+        """One pass: expire stale proposals; ask the agent to retry parked commits."""
+        with pool.connection() as conn:
+            for cid in store.sweep_expired(conn, datetime.now(UTC)):
+                row = store.get(conn, cid)
+                if row is not None:
+                    announce(row, "system")
+                    # the graph must learn the gate closed
+                    resume(row, {"decision": "REJECT", "actor": "system", "reason": "expired"})
+            parked = store.list_by_state(conn, "COMMIT_PENDING")
+        for row in parked:
+            resume(row, {"decision": "RETRY", "actor": "system", "reason": "sweeper"})
+
     def sweep_forever() -> None:
         while True:
-            time.sleep(30)  # the sweeper's cadence; expiry granularity is 30 s
+            time.sleep(30)  # the sweeper's cadence; expiry granularity and retry clock are 30 s
             try:
-                with pool.connection() as conn:
-                    for cid in store.sweep_expired(conn, datetime.now(UTC)):
-                        row = store.get(conn, cid)
-                        if row is not None:
-                            announce(row, "system")
-                            if agent is not None:  # the graph must learn the gate closed
-                                agent.post(
-                                    f"/threads/{row['thread_id']}/resume",
-                                    json={
-                                        "decision": "REJECT",
-                                        "actor": "system",
-                                        "reason": "expired",
-                                    },
-                                )
+                sweep()
             except Exception:  # keep sweeping; a transient error must not kill the thread
                 log.exception("sweep failed")
 
+    app.state.sweep = sweep
     app.state.sweep_forever = sweep_forever
     return app
 

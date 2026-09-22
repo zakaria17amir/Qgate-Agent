@@ -29,7 +29,7 @@ class TriageRequest(BaseModel):
 
 
 class ResumeRequest(BaseModel):
-    decision: str  # APPROVE | AMEND | REJECT
+    decision: str  # APPROVE | AMEND | REJECT from a human; RETRY from the api's sweeper
     actor: str
     reason: str | None = None
     bounds: Bounds | None = None  # amended bounds, when AMEND
@@ -78,7 +78,12 @@ def build_http(
         if not snap.values:
             raise HTTPException(404, "unknown thread")
         interrupts = [i for t in snap.tasks for i in t.interrupts]
-        status = "WAITING_GATE" if interrupts else "DONE" if not snap.next else "RUNNING"
+        if interrupts:
+            status = (
+                "WAITING_RETRY" if interrupts[0].value.get("waiting") == "mes" else "WAITING_GATE"
+            )
+        else:
+            status = "DONE" if not snap.next else "RUNNING"
         v = snap.values
         # while waiting, the gate node has not returned yet: its containment id is in the payload
         cid = interrupts[0].value["containment_id"] if interrupts else v.get("containment_id")

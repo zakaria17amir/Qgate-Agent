@@ -203,3 +203,67 @@ def test_restart_mid_gate_loses_nothing(stack: Stack) -> None:
             "select count(*) from qgate.containment where thread_id = %s", (uuid.UUID(tid),)
         ).fetchone()
     assert n == (1,)
+
+
+@pytest.fixture
+def _no_backoff(monkeypatch: pytest.MonkeyPatch) -> None:
+    from tenacity import wait_none
+
+    from qgate_agent.tools import mes
+
+    monkeypatch.setattr(mes, "WAIT", wait_none())
+
+
+@pytest.mark.usefixtures("_no_backoff")
+def test_lost_ack_mid_commit_ends_with_exactly_one_hold(stack: Stack) -> None:
+    """Phase 4 Review Focus 1: the MES records the hold but the answer never arrives. The retry
+    replays the same idempotency key, so the plant sees one hold and the agent gets its ref."""
+    g = load_golden(stack, "drift-07")
+    _, snap = triage(stack, g)
+    cid = snap["containment_id"]
+    before = stack.mes.get("/_stats").json()
+    stack.mes.post("/_chaos", json={"mode": "drop_ack", "seconds": 600})
+
+    stack.api.post(f"/containments/{cid}/approve", json={}, headers=stack.human())
+    final = stack.api.get(f"/containments/{cid}", headers=stack.human()).json()
+    after = stack.mes.get("/_stats").json()
+    stack.mes.post("/_chaos", json={"mode": "drop_ack", "seconds": 0})
+    assert final["state"] == "COMMITTED" and final["mes_ref"]
+    assert after["holds"] == before["holds"] + 1
+    assert after["duplicate_replays"] >= before["duplicate_replays"] + 1
+
+
+@pytest.mark.usefixtures("_no_backoff")
+def test_outage_mid_commit_parks_then_commits_when_swept(stack: Stack) -> None:
+    g = load_golden(stack, "drift-08")
+    tid, snap = triage(stack, g)
+    cid = snap["containment_id"]
+    before = stack.mes.get("/_stats").json()["holds"]
+    stack.mes.post("/_chaos", json={"mode": "error", "seconds": 600, "status": 503})
+
+    stack.api.post(f"/containments/{cid}/approve", json={}, headers=stack.human())
+    assert (
+        stack.api.get(f"/containments/{cid}", headers=stack.human()).json()["state"]
+        == "COMMIT_PENDING"
+    )
+    assert stack.agent is not None
+    assert stack.agent.get(f"/threads/{tid}").json()["status"] == "WAITING_RETRY"
+    # a second approve while parked is refused: the decision was already taken
+    assert (
+        stack.api.post(f"/containments/{cid}/approve", json={}, headers=stack.human()).status_code
+        == 409
+    )
+    stack.sweep()  # still down: stays parked, no extra hold
+    assert (
+        stack.api.get(f"/containments/{cid}", headers=stack.human()).json()["state"]
+        == "COMMIT_PENDING"
+    )
+
+    stack.mes.post("/_chaos", json={"mode": "error", "seconds": 0})
+    from qgate_agent import nodes
+
+    nodes.BREAKER.succeeded()  # the 60 s open period would otherwise gate this test
+    stack.sweep()
+    final = stack.api.get(f"/containments/{cid}", headers=stack.human()).json()
+    assert final["state"] == "COMMITTED"
+    assert stack.mes.get("/_stats").json()["holds"] == before + 1

@@ -49,7 +49,7 @@ class Hold(HoldRequest):
 
 class ChaosRequest(BaseModel):
     mode: Literal["latency", "error", "drop_ack"]
-    seconds: int = Field(ge=1, le=600)
+    seconds: int = Field(ge=0, le=600)  # 0 clears the active fault
     status: int = 503
 
 
