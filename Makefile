@@ -22,8 +22,8 @@ help: ## list targets
 up: ## start core services (ingest, detect, agent, api, mock-mes, console + infra); `make demo` replays a line
 	$(COMPOSE) $(CORE) up -d --build
 
-up-infra: ## infra only: redpanda, postgres, migrations
-	$(COMPOSE) $(CORE) up -d --wait redpanda postgres && $(COMPOSE) $(CORE) run --rm migrate && $(COMPOSE) $(CORE) run --rm roles
+up-infra: ## infra only: redpanda, postgres, migrations, roles, dimension seed
+	$(COMPOSE) $(CORE) up -d --wait redpanda postgres && $(COMPOSE) $(CORE) run --rm migrate && $(COMPOSE) $(CORE) run --rm roles && $(COMPOSE) $(CORE) run --rm seed
 
 up-all: ## core + observability + prefect
 	$(COMPOSE) $(CORE) $(OBS) $(EVAL) up -d --build
@@ -75,6 +75,7 @@ install: ## sync the uv workspace and console deps
 lint: ## ruff, prettier, eslint, tsc (no changes)
 	uv run ruff check .
 	uv run ruff format --check .
+	uv run python scripts/check_links.py
 	cd console && npx prettier --check "src/**/*.{ts,tsx,json,css}" "e2e/*.ts" "*.ts" && npx eslint . && npx tsc -b
 
 fmt: ## apply formatters

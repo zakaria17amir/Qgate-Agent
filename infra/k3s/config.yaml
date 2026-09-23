@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: qgate-config
+data:
+  KAFKA_BOOTSTRAP: redpanda:9092
+  SCHEMA_REGISTRY_URL: http://redpanda:8081
+  QGATE_SCHEMAS_DIR: /schemas
+  DETECT_BASE_URL: http://detect:8002
+  API_BASE_URL: http://api:8000
+  AGENT_BASE_URL: http://agent:8001
+  MES_BASE_URL: http://mock-mes:8003
+  FAULT_MAP_PATH: /knowledge/fault_map.yaml
+  CASSETTE_DIR: /cassettes
+  LLM_MODE: replay
+  LLM_PROVIDER: anthropic
+  LLM_MODEL: claude-haiku-4-5
+  APPROVAL_TIMEOUT_S: '1800'
+  CORS_ORIGINS: http://localhost:8080,http://localhost:4173
+  PYTHONUNBUFFERED: '1'
