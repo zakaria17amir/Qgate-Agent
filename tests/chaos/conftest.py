@@ -27,7 +27,7 @@ if os.environ.get("CHAOS") != "1":
 ENV = {k: (v or "").split("#")[0].strip() for k, v in dotenv_values(ROOT / ".env").items()}
 PG_URL = (  # the migrate role: the suite loads a golden's run into the stack's fact tables
     f"postgres://qgate_migrate:{ENV['POSTGRES_PASSWORD']}@localhost:"
-    f"{ENV.get('POSTGRES_HOST_PORT') or 5432}/qgate"
+    f"{ENV.get('POSTGRES_HOST_PORT') or 15432}/qgate"
 )
 
 
