@@ -201,7 +201,7 @@ Console and C++ are independent of each other; reliability items need Phase 3 co
 - [x] **[F]** `RUNBOOK.md` sections 1–8 written for the shift leader (+ §9 SLOs, §10 replay via Prefect, §11 Langfuse)
 - [x] **[F]** `docs/roi.md`: assumptions table, break-even agreement rate, sensitivity on escape cost — every figure labelled
 - [x] **[F]** `infra/k3s/` kustomize, exercised once on a single-node k3d cluster (not a VM); README says exactly that
-- [ ] **[F]** Fresh clone on a different machine: `git clone && make up && make demo` → the README is true
+- [x] **[F]** Fresh clone (second checkout on the same laptop, clean volumes, cold image build): `git clone && make up && make demo` → the README is true; six findings fixed (`docs/fresh-clone.md`)
 - [x] **[F]** Skill-coverage table ticked against real artefacts (`docs/skills.md`, links checked by `make lint`); anything unticked removed from CV claims
 - [ ] **[F]** Tag `v1.0.0`; release notes carry `eval/report.md`
 - [ ] **[G]** **Gate 6:** a stranger clones, runs one command, sees it work — and every claimed skill has a link
