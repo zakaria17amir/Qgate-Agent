@@ -98,7 +98,7 @@ services:
       <<: *hc-http
 
   migrate:
-    image: amacneil/dbmate:2.19@sha256:84043c7409dec5494d861c3c1779adbe28a41a283cf8103e6c08f7b829f5563d
+    image: amacneil/dbmate:2.36@sha256:520c740c6e0ad73fde2cd1ea7e2b779aaf789d22aca8858f87a478e7094535fb
     profiles: [core]
     env_file: .env
     environment:
@@ -358,7 +358,7 @@ services:
       <<: *hc-http
 
   langfuse-worker:
-    image: langfuse/langfuse-worker:4.35.0@sha256:5e35e625a214dd868bb22adad90fc52e8f83cc856c3750e47f9a922622c207fb
+    image: langfuse/langfuse-worker:4.38.0@sha256:8631cf429efc4a2981d4e6ced4c005b9f6f620a4e34625baf60152301ec6d006
     profiles: [obs]
     environment: *langfuse-env
     depends_on: &langfuse-deps
@@ -368,7 +368,7 @@ services:
       redis: { condition: service_healthy }
 
   langfuse-web:
-    image: langfuse/langfuse:4.35.0@sha256:a5d8d2457702ab7e051bc0788d73871970caebd10aae6635e87cfb736e4067cd
+    image: langfuse/langfuse:4.38.0@sha256:47ef2f121e2959c8458c209d118949ade25778017e3f5b75b1e45f72276811c3
     profiles: [obs]
     ports: ["3001:3000"]
     environment:
@@ -393,7 +393,7 @@ services:
 
   # ---------------------------------------------------------------- orchestration
   prefect-server:
-    image: prefecthq/prefect:3.8.6-python3.12@sha256:ec9e58deaf30002dd65ebb755ca3d9eb5f169902882abf18c79261a4aa95bfe3
+    image: prefecthq/prefect:3.8.7.dev4-python3.12@sha256:f2515ed61c5c32dc0a5bf7a1afb215c1f9002beda1db6b083b31759bfd4e5aa9
     profiles: [eval]
     command: prefect server start --host 0.0.0.0
     ports: ["4200:4200"]
@@ -473,7 +473,7 @@ services:
 
   # ---------------------------------------------------------------- chaos
   toxiproxy:
-    image: ghcr.io/shopify/toxiproxy:2.9.0@sha256:b44c283298cea49e2defaba1b3028783798346f2a926684e3a345fd8441af3b8
+    image: ghcr.io/shopify/toxiproxy:2.12.0@sha256:9378ed52a28bc50edc1350f936f518f31fa95f0d15917d6eb40b8e376d1a214e
     profiles: [chaos]
     ports: ["8474:8474"]
     volumes:
