@@ -323,3 +323,20 @@ def test_crash_between_gate_and_commit_is_resumed_by_the_sweeper(
             "select count(*) from qgate.containment where thread_id = %s", (uuid.UUID(tid),)
         ).fetchone()
     assert n == (1,)
+
+
+def test_template_mode_proposes_without_any_model(pg_url: str) -> None:
+    """The fresh-clone path: no API key, no cassettes for this line — the deterministic tools
+    still bound the containment and the order is templated prose that says so."""
+    with psycopg.connect(pg_url) as conn:
+        seed_dims(conn, LINE)
+    stack = Stack(pg_url, FakeModel(), "template", ROOT / "eval" / "cassettes")
+    try:
+        g = load_golden(stack, "drift-11")
+        _, snap = triage(stack, g)
+        assert snap["status"] == "WAITING_GATE", snap
+        row = stack.api.get(f"/containments/{snap['containment_id']}", headers=stack.human()).json()
+        assert row["kind"] == "WINDOW" and row["station_id"] == "ST-19"
+        assert "Template wording" in row["draft_order"]
+    finally:
+        stack.close()

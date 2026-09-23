@@ -16,12 +16,17 @@ from pydantic import BaseModel
 
 from qgate_core.pricing import Usage
 
-Mode = Literal["live", "record", "replay"]
+Mode = Literal["live", "record", "replay", "template"]  # template: no model at all
 PROMPTS = Path(__file__).parent / "prompts"
 
 
 class CassetteMissError(LookupError):
     """Replay asked for a prompt+inputs that were never recorded."""
+
+
+class NoModelError(RuntimeError):
+    """Template mode: the caller supplies a deterministic answer instead (a fresh clone has no
+    API key and no cassettes for its own line; the tools still decide, only the prose is canned)."""
 
 
 class StructuredModel(Protocol):
@@ -82,6 +87,8 @@ class Ask:
     def __call__[S: BaseModel](
         self, prompt_id: str, version: str, inputs: dict[str, Any], schema: type[S]
     ) -> tuple[S, Usage]:
+        if self.mode == "template":
+            raise NoModelError(prompt_id)
         key = self.dir / f"{_key(prompt_id, version, inputs)}.json"
         if self.mode == "replay":
             if not key.exists():
