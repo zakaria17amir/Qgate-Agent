@@ -128,7 +128,9 @@ def _with(vins: list[str], vin: str) -> list[str]:
 # ----------------------------------------------------------------------------- node closures
 
 
-def make_nodes(deps: Deps) -> dict[str, Callable[[TriageState], dict[str, Any]]]:
+def make_nodes(
+    deps: Deps, eol_wait_s: float = 30.0
+) -> dict[str, Callable[[TriageState], dict[str, Any]]]:
     fm = deps.fault_map["faults"]
 
     def intake(s: TriageState) -> dict[str, Any]:
@@ -146,8 +148,14 @@ def make_nodes(deps: Deps) -> dict[str, Callable[[TriageState], dict[str, Any]]]
         }
 
     def genealogy(s: TriageState) -> dict[str, Any]:
-        with deps.ro.connection() as conn:
-            g = get_vehicle_genealogy(conn, s["vin"])
+        # the consumer and ingest read the same EOL event; give ingest time to write it
+        deadline = time.monotonic() + eol_wait_s
+        while True:
+            with deps.ro.connection() as conn:
+                g = get_vehicle_genealogy(conn, s["vin"])
+            if g.eol is not None or time.monotonic() >= deadline:
+                break
+            time.sleep(0.5)
         if g.eol is None:
             raise ValueError(f"{s['vin']} has no end-of-line result to triage")
         # a manual trigger may omit the clock; the vehicle's own EOL time is the honest one

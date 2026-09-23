@@ -150,3 +150,19 @@ def test_hypotheses_outside_the_fault_map_are_rejected() -> None:
     )
     with pytest.raises(ValueError, match="ST-42"):
         nodes.validate_hypotheses(bad, allowed)
+
+
+def test_genealogy_waits_for_ingest_to_land_the_eol_row(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The consumer sees the EOL event before ingest has written it (found by the fresh clone)."""
+    from contextlib import nullcontext
+    from types import SimpleNamespace
+
+    answers = [SimpleNamespace(eol=None), SimpleNamespace(eol=SimpleNamespace(tested_at=T0))]
+    monkeypatch.setattr(nodes, "get_vehicle_genealogy", lambda conn, vin: answers.pop(0))
+    deps = SimpleNamespace(ro=SimpleNamespace(connection=nullcontext), fault_map={"faults": {}})
+    genealogy = nodes.make_nodes(deps, eol_wait_s=1.0)["genealogy"]  # type: ignore[arg-type]
+    assert genealogy({"vin": "SYN1", "fault_codes": ["F-19"]})["eol_ts"] == T0
+
+    answers[:] = [SimpleNamespace(eol=None)] * 100
+    with pytest.raises(ValueError, match="no end-of-line result"):
+        nodes.make_nodes(deps, eol_wait_s=0.0)["genealogy"]({"vin": "SYN1", "fault_codes": []})  # type: ignore[arg-type]
