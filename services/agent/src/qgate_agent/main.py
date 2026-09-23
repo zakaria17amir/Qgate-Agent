@@ -16,7 +16,7 @@ from qgate_agent import consumer
 from qgate_agent.checkpoint import saver
 from qgate_agent.graph import build_graph
 from qgate_agent.http import build_http
-from qgate_agent.llm import Ask, LangChainModel, Mode
+from qgate_agent.llm import Ask, LangChainModel, Mode, NoModelConfigured, StructuredModel
 from qgate_agent.nodes import Deps
 from qgate_core import otel
 from qgate_core.auth import Role, mint
@@ -49,6 +49,12 @@ def main() -> None:
     otel.configure("agent")
     s = AgentSettings()
     service_token = mint("agent", Role.SERVICE, s.jwt_secret)
+    # only live and record ever call a provider; the other modes must start without a key
+    model: StructuredModel = (
+        LangChainModel(s.llm_model, s.llm_provider, s.llm_api_key, s.llm_base_url)
+        if s.llm_mode in ("live", "record")
+        else NoModelConfigured(s.llm_model)
+    )
     blips = httpx.HTTPTransport(retries=3)  # connect-level retries; 5xx policy lives in tools.mes
     deps_kwargs = dict(
         ro=ConnectionPool(s.database_url_agent_ro, min_size=1, max_size=4, open=True),
@@ -65,11 +71,7 @@ def main() -> None:
             headers={"X-API-Key": s.mes_api_key},
             transport=blips,
         ),
-        ask=Ask(
-            s.llm_mode,
-            s.cassette_dir,
-            LangChainModel(s.llm_model, s.llm_provider, s.llm_api_key, s.llm_base_url),
-        ),
+        ask=Ask(s.llm_mode, s.cassette_dir, model),
         fault_map=yaml.safe_load(s.fault_map_path.read_text(encoding="utf8")),
     )
     with saver(s.database_url_checkpoint_rw) as checkpointer:

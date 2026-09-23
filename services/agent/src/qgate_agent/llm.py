@@ -78,6 +78,17 @@ def load_prompt(prompt_id: str, prompts_dir: Path = PROMPTS) -> Prompt:
     return Prompt(id=head["id"], version=str(head["version"]), template=body.strip())
 
 
+class NoModelConfigured:
+    """Stands in for the provider client when the mode never calls one (replay, template): a
+    fresh clone must start without an API key."""
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+    def invoke(self, prompt: str, schema: type[BaseModel]) -> tuple[BaseModel, Usage]:
+        raise NoModelError("no model configured for this mode")
+
+
 class Ask:
     def __init__(
         self, mode: Mode, cassette_dir: Path, model: StructuredModel, prompts_dir: Path = PROMPTS

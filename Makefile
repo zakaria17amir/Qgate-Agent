@@ -20,7 +20,7 @@ help: ## list targets
 # --- stack -------------------------------------------------------------------
 
 up: ## start core services (ingest, detect, agent, api, mock-mes, console + infra); `make demo` replays a line
-	$(COMPOSE) $(CORE) up -d --build
+	$(COMPOSE) $(CORE) up -d --build --wait
 
 up-infra: ## infra only: redpanda, postgres, migrations, roles, dimension seed
 	$(COMPOSE) $(CORE) up -d --wait redpanda postgres && $(COMPOSE) $(CORE) run --rm migrate && $(COMPOSE) $(CORE) run --rm roles && $(COMPOSE) $(CORE) run --rm seed
