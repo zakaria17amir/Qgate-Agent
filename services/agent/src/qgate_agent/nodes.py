@@ -148,12 +148,15 @@ def make_nodes(
         }
 
     def genealogy(s: TriageState) -> dict[str, Any]:
-        # the consumer and ingest read the same EOL event; give ingest time to write it
+        # the consumer and ingest read the same EOL event; give ingest time to write it and the
+        # final station's measurements (another topic, so they can land after it)
+        # ponytail: only the last visit is checked; earlier ones were produced takts before
         deadline = time.monotonic() + eol_wait_s
         while True:
             with deps.ro.connection() as conn:
                 g = get_vehicle_genealogy(conn, s["vin"])
-            if g.eol is not None or time.monotonic() >= deadline:
+            landed = g.eol is not None and bool(g.visits) and bool(g.visits[-1].measurements)
+            if landed or time.monotonic() >= deadline:
                 break
             time.sleep(0.5)
         if g.eol is None:

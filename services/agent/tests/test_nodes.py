@@ -157,12 +157,18 @@ def test_genealogy_waits_for_ingest_to_land_the_eol_row(monkeypatch: pytest.Monk
     from contextlib import nullcontext
     from types import SimpleNamespace
 
-    answers = [SimpleNamespace(eol=None), SimpleNamespace(eol=SimpleNamespace(tested_at=T0))]
+    eol = SimpleNamespace(tested_at=T0)
+    answers = [
+        SimpleNamespace(eol=None, visits=[]),
+        SimpleNamespace(eol=eol, visits=[SimpleNamespace(measurements=[])]),  # EOL row first
+        SimpleNamespace(eol=eol, visits=[SimpleNamespace(measurements=["m"])]),
+    ]
     monkeypatch.setattr(nodes, "get_vehicle_genealogy", lambda conn, vin: answers.pop(0))
     deps = SimpleNamespace(ro=SimpleNamespace(connection=nullcontext), fault_map={"faults": {}})
     genealogy = nodes.make_nodes(deps, eol_wait_s=1.0)["genealogy"]  # type: ignore[arg-type]
     assert genealogy({"vin": "SYN1", "fault_codes": ["F-19"]})["eol_ts"] == T0
+    assert answers == []  # it waited for the measurements, not just the EOL row
 
-    answers[:] = [SimpleNamespace(eol=None)] * 100
+    answers[:] = [SimpleNamespace(eol=None, visits=[])] * 100
     with pytest.raises(ValueError, match="no end-of-line result"):
         nodes.make_nodes(deps, eol_wait_s=0.0)["genealogy"]({"vin": "SYN1", "fault_codes": []})  # type: ignore[arg-type]
