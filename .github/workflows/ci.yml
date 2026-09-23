@@ -18,10 +18,10 @@ jobs:
   lint:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.1.0
         with: { version: "${{ env.UV_VERSION }}" }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with: { node-version: "24", cache: npm, cache-dependency-path: console/package-lock.json }
       - run: make install
       - run: make lint
@@ -30,20 +30,20 @@ jobs:
   unit:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.1.0
         with: { version: "${{ env.UV_VERSION }}" }
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
       - run: uv sync --all-packages --group dev
       - run: cp .env.example .env
       - run: make unit
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with: { name: coverage, path: coverage.xml }
 
   contract:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.1.0
         with: { version: "${{ env.UV_VERSION }}" }
       - run: uv sync --all-packages --group dev
@@ -52,7 +52,7 @@ jobs:
   integration:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.1.0
         with: { version: "${{ env.UV_VERSION }}" }
       - run: uv sync --all-packages --group dev
@@ -62,29 +62,29 @@ jobs:
     needs: [unit, contract, integration]
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.1.0
         with: { version: "${{ env.UV_VERSION }}" }
       - run: cp .env.example .env
       - run: uv sync --all-packages --group dev
       - run: make eval-replay
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with: { name: eval-report, path: eval/report.md }
 
   console:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.1.0
         with: { version: "${{ env.UV_VERSION }}" }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with: { node-version: "24", cache: npm, cache-dependency-path: console/package-lock.json }
       - run: cp .env.example .env
       - run: make install
       - run: cd console && npx playwright install --with-deps chromium
       - run: make console-e2e
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with: { name: playwright-traces, path: console/test-results }
 
@@ -92,7 +92,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions: { contents: read, security-events: write }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { fetch-depth: 0 }
       - uses: astral-sh/setup-uv@v10.1.0
         with: { version: "${{ env.UV_VERSION }}" }
@@ -107,8 +107,8 @@ jobs:
     needs: [lint]
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
+      - uses: actions/checkout@v7
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
       - run: cp .env.example .env
       - run: make build
