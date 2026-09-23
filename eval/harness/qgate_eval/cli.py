@@ -130,6 +130,14 @@ def serve(
 
 
 @app.command()
+def roi() -> None:
+    """Print the ROI tables docs/roi.md quotes (every input is a labelled assumption)."""
+    from qgate_eval.roi import markdown
+
+    typer.echo(markdown(), nl=False)
+
+
+@app.command()
 def goldens(
     out: Path = typer.Option(Path("eval/goldens")),
     scenarios_dir: Path = typer.Option(Path("scenarios")),
