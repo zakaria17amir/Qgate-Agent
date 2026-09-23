@@ -16,7 +16,7 @@ from langgraph.types import interrupt
 from psycopg_pool import ConnectionPool
 from pydantic import BaseModel
 
-from qgate_agent.llm import Ask
+from qgate_agent.llm import Ask, NoModelError
 from qgate_agent.state import (
     Bounds,
     Explanation,
@@ -166,18 +166,20 @@ def make_nodes(deps: Deps) -> dict[str, Callable[[TriageState], dict[str, Any]]]
             ),
             "oot_stations": ", ".join(s["genealogy"].out_of_tolerance_stations()) or "none",
         }
-        answer, acct = _ask(deps, s, "hypothesise", inputs, Hypotheses)
+        authored = [  # the fault map's own order: the answer when there is no model to rank it
+            Hypothesis(
+                station_id=c["station_id"],
+                characteristic_id=c["characteristic_ids"][0],
+                reasoning=c["rationale"],
+            )
+            for c in candidates
+        ]
+        answer, acct = _ask(
+            deps, s, "hypothesise", inputs, Hypotheses, lambda: Hypotheses(ranked=authored)
+        )
         try:
             return {"hypotheses": validate_hypotheses(answer, allowed), **acct}
         except ValueError as e:  # the model went off the map: fall back to the authored order
-            authored = [
-                Hypothesis(
-                    station_id=c["station_id"],
-                    characteristic_id=c["characteristic_ids"][0],
-                    reasoning=c["rationale"],
-                )
-                for c in candidates
-            ]
             return {
                 "hypotheses": authored,
                 "errors": [*s.get("errors", []), f"hypothesise: {e}"],
@@ -245,7 +247,19 @@ def make_nodes(deps: Deps) -> dict[str, Callable[[TriageState], dict[str, Any]]]
             f"drift {s['drift'].verdict} ({s['drift'].severity}); "
             f"bench capable {s['bench'].capable}",
         }
-        order, acct = _ask(deps, s, "compose", inputs, Order)
+        order, acct = _ask(
+            deps,
+            s,
+            "compose",
+            inputs,
+            Order,
+            lambda: Order(
+                text=f"Hold {len(b.vins)} vehicle(s) built at {b.station_id} ({spec.name}), "
+                f"{scope}. Trigger {s['vin']} failed {inputs['fault_codes']}; "
+                f"{inputs['evidence']}. Inspect the station before releasing. "
+                "(Template wording: no language model configured.)"
+            ),
+        )
         text = order.text
         if (b.station_id or "") not in text or str(len(b.vins)) not in text:  # numbers must be ours
             text = f"Hold {len(b.vins)} vehicle(s) — station {b.station_id}, {scope}. " + text
@@ -345,7 +359,19 @@ def make_nodes(deps: Deps) -> dict[str, Callable[[TriageState], dict[str, Any]]]
             "siblings": s["siblings"].n,
             "bench": f"capable={s['bench'].capable}",
         }
-        why, acct = _ask(deps, s, "escalate", inputs, Explanation)
+        why, acct = _ask(
+            deps,
+            s,
+            "escalate",
+            inputs,
+            Explanation,
+            lambda: Explanation(
+                text=f"Evidence conflicts for {s['vin']} ({inputs['fault_codes']}): drift "
+                f"{inputs['drift']} but {inputs['siblings']} sibling failure(s); bench "
+                f"{inputs['bench']}. A person must decide. (Template wording: no language model "
+                "configured.)"
+            ),
+        )
         return {**_no_proposal(deps, s, "ESCALATED", why.text), **acct}
 
     def report(s: TriageState) -> dict[str, Any]:
@@ -436,13 +462,23 @@ def _evidence(s: TriageState) -> dict[str, Any]:
 
 
 def _ask[S: BaseModel](
-    deps: Deps, s: TriageState, prompt_id: str, inputs: dict[str, Any], schema: type[S]
+    deps: Deps,
+    s: TriageState,
+    prompt_id: str,
+    inputs: dict[str, Any],
+    schema: type[S],
+    fallback: Callable[[], S],
 ) -> tuple[S, dict[str, Any]]:
     """Call the model through the cassette layer; return the answer and the state update that
-    accounts for its time and tokens (nodes must *return* updates, not mutate state)."""
+    accounts for its time and tokens (nodes must *return* updates, not mutate state). In template
+    mode (no model, no cassettes) ``fallback`` supplies the answer and nothing is charged."""
     t0 = time.perf_counter()
     with otel.span(f"llm.{prompt_id}", prompt_id=prompt_id, prompt_version=PROMPT_VERSION) as sp:
-        answer, usage = deps.ask(prompt_id, PROMPT_VERSION, inputs, schema)
+        try:
+            answer, usage = deps.ask(prompt_id, PROMPT_VERSION, inputs, schema)
+        except NoModelError:
+            answer, usage = fallback(), Usage(0, 0)
+            sp.set_attribute("template", True)
         sp.set_attribute("prompt_tokens", usage.prompt_tokens)
         sp.set_attribute("completion_tokens", usage.completion_tokens)
     metrics.LLM_TOKENS.labels(kind="prompt", prompt_id=prompt_id).inc(usage.prompt_tokens)

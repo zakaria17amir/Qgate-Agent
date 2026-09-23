@@ -1,6 +1,7 @@
 """The cassette layer: record once, replay forever, never call a provider in replay."""
 
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 from pydantic import BaseModel
@@ -91,3 +92,35 @@ def test_ollama_provider_points_at_the_configured_host() -> None:
     assert type(m._chat).__name__ == "ChatOllama"
     assert m._chat.base_url == "http://host.docker.internal:11434"
     assert m.name == "qwen2.5:7b"
+
+
+def test_template_mode_never_touches_a_model_and_the_node_falls_back(tmp_path: Path) -> None:
+    """A fresh clone has no API key and no cassette for its own line: the deterministic tools
+    still decide, and the two model prompts are answered by the caller's template."""
+    from qgate_agent import nodes
+    from qgate_agent.llm import Ask, NoModelError
+    from qgate_agent.state import Order, TriageState
+
+    class Exploding:
+        name = "must-not-be-called"
+
+        def invoke(self, prompt: str, schema: type[BaseModel]) -> tuple[BaseModel, Usage]:
+            raise AssertionError("template mode reached the model")
+
+    ask = Ask("template", tmp_path, Exploding())
+    with pytest.raises(NoModelError):
+        ask("compose", "1", {"x": 1}, Order)
+
+    deps = MagicMock()
+    deps.ask = ask
+    state: TriageState = {"llm_ms": 0.0, "prompt_tokens": 0, "completion_tokens": 0}
+    answer, acct = nodes._ask(
+        deps,
+        state,
+        "compose",
+        {"x": 1},
+        Order,
+        fallback=lambda: Order(text="Hold 3 vehicles at ST-19 (template, no model)."),
+    )
+    assert "template" in answer.text
+    assert acct["prompt_tokens"] == 0 and acct["completion_tokens"] == 0
