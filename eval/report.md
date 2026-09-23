@@ -1,4 +1,4 @@
-# Evaluation — 50 goldens (replay, claude-haiku-4-5, 2026-09-22)
+# Evaluation — 50 goldens (live, claude-haiku-4-5, 2026-09-23)
 
 | Metric | Value |
 |---|---|
@@ -7,9 +7,9 @@
 | Decision match | 0.96 |
 | Agreement rate (approved unamended) | 0.66 |
 | Abstention correct rate | 1.00 |
-| Latency p50 / p95 (total) | 106 / 128 ms |
-| Latency p95 (LLM only / non-LLM) | 2 / 127 ms |
-| Cost per triage | 0.003293 USD (assumption) |
+| Latency p50 / p95 (total) | 3691 / 4647 ms |
+| Latency p95 (LLM only / non-LLM) | 4610 / 58 ms |
+| Cost per triage | 0.003301 USD (assumption) |
 
 | Family | Cases | Escapes | Precision | Recall | Decision match |
 |---|---|---|---|---|---|

@@ -13,10 +13,13 @@ Written for the person on shift, not for the developer. Each entry: what you see
 6. Kafka consumer lag is climbing
 7. Restarting a service safely
 8. Who to call
+9. Is the system inside its targets? (SLOs)
+10. Replaying a line (Prefect)
+11. Seeing what the agent thought (Langfuse)
 
 ## 0. Run the demo from the console
 
-Someone with a terminal does this once: `make up` then `make demo SCENARIO=tool_wear SPEED=10`, and
+Someone with a terminal does this once: `make up` then `make demo` (tool_wear at 100× takt), and
 hands you a token (`make token ROLE=approver SUB=<your name>`).
 
 1. Open `http://localhost:8080`. Click **Token** (bottom of the left rail), paste, **Use token**.
@@ -98,3 +101,41 @@ Every service is safe to restart at any moment:
 - Plant system (MES) unreachable: the MES owner. The agent will finish the commit when it is back.
 - Bench flagged not capable: metrology.
 - Anything else: the on-call engineer; give them the containment id from the case page URL.
+
+## 9. Is the system inside its targets? (SLOs)
+
+Open Grafana (`make up-all`, `http://localhost:3000`, dashboard *qgate*). Four targets:
+
+| Target | Where you see it | Over budget looks like |
+|---|---|---|
+| Proposal ready p95 ≤ 30 s (non-model part) | *SLO: non-LLM triage p95 < 30 s* | burn above 0.05: more than 1 in 20 triages in the last hour took longer |
+| No event lost | *Ingest throughput* (DLQ line) and *Error rate* | DLQ line above zero: a message was rejected and parked; nothing silently dropped |
+| Gate durability | *SLO: gate durability* | below 1.0: a decision was taken but no outcome (committed / rejected) followed |
+| Exactly one hold per approval | *Plant system (MES): requests by status*, MES `/_stats` | `duplicate_replays` is expected after retries; a second hold for one containment is not |
+
+**You see:** a burn panel turns red. **It means:** the target was missed in the last hour, not
+right now. **Do:** check *Consumer lag* and *MES breaker state* first (§5, §6); if neither
+explains it, call the on-call engineer (§8) with the panel screenshot.
+
+## 10. Replaying a line (Prefect)
+
+To rerun a scenario and check it landed, use the flow rather than a terminal command:
+`make flows` once registers the three flows; then in Prefect (`http://localhost:4200`) open
+*Deployments › replay-scenario › Run*, pick a scenario (e.g. `tool_wear`).
+
+**You see:** the flow run ends *Completed* with a table of counts (manifest vs Postgres).
+**It means:** every event the line produced is in the database. *Failed* on the count step means
+ingest is behind or dropped something — see §6.
+**Do:** nothing on success; the queue fills as in §1. On failure, attach the flow run link when
+you call (§8).
+
+## 11. Seeing what the agent thought (Langfuse)
+
+Every triage is one trace: each step, each database/tool call and each model call with its
+prompt, answer, tokens and time. Open Langfuse (`make up-all`, `http://localhost:3001`) and
+search for the containment's `thread_id` (the case page URL has the containment id;
+`GET /containments/{id}` at `http://localhost:8000/docs` returns its `thread_id`).
+
+**You see:** a trace with `node.*`, `tool.*`, `llm.*` spans. **It means:** this is the evidence
+behind the proposal, step by step. **Do:** use it when a proposal looks wrong — the `tool.*`
+spans show what the data said, the `llm.*` spans what the model made of it.
