@@ -1,0 +1,630 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingest
+  labels:
+    app: ingest
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ingest
+  template:
+    metadata:
+      labels:
+        app: ingest
+    spec:
+      containers:
+      - name: ingest
+        image: ghcr.io/zakaria17amir/qgate-ingest:0.1.0-rc1
+        ports:
+        - containerPort: 8010
+          name: http
+        env:
+        - name: PORT
+          value: '8010'
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: qgate-secrets
+              key: POSTGRES_PASSWORD
+        - name: DATABASE_URL
+          value: postgres://ingest_rw:$(POSTGRES_PASSWORD)@postgres:5432/qgate
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 6
+          initialDelaySeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 6
+          initialDelaySeconds: 20
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 10001
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: schemas
+          mountPath: /schemas
+          readOnly: true
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            memory: 1Gi
+        envFrom:
+        - configMapRef:
+            name: qgate-config
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: schemas
+        configMap:
+          name: qgate-schemas
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingest
+spec:
+  selector:
+    app: ingest
+  ports:
+  - port: 8010
+    targetPort: http
+    name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: detect
+  labels:
+    app: detect
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: detect
+  template:
+    metadata:
+      labels:
+        app: detect
+    spec:
+      containers:
+      - name: detect
+        image: ghcr.io/zakaria17amir/qgate-detect:0.1.0-rc1
+        ports:
+        - containerPort: 8002
+          name: http
+        env:
+        - name: PORT
+          value: '8002'
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: qgate-secrets
+              key: POSTGRES_PASSWORD
+        - name: DATABASE_URL
+          value: postgres://detect_ro:$(POSTGRES_PASSWORD)@postgres:5432/qgate
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 6
+          initialDelaySeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 6
+          initialDelaySeconds: 20
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 10001
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: schemas
+          mountPath: /schemas
+          readOnly: true
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            memory: 1Gi
+        envFrom:
+        - configMapRef:
+            name: qgate-config
+        args:
+        - api
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: schemas
+        configMap:
+          name: qgate-schemas
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: detect
+spec:
+  selector:
+    app: detect
+  ports:
+  - port: 8002
+    targetPort: http
+    name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: detect-worker
+  labels:
+    app: detect-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: detect-worker
+  template:
+    metadata:
+      labels:
+        app: detect-worker
+    spec:
+      containers:
+      - name: detect-worker
+        image: ghcr.io/zakaria17amir/qgate-detect:0.1.0-rc1
+        ports:
+        - containerPort: 8012
+          name: http
+        env:
+        - name: PORT
+          value: '8012'
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: qgate-secrets
+              key: POSTGRES_PASSWORD
+        - name: DATABASE_URL
+          value: postgres://detect_ro:$(POSTGRES_PASSWORD)@postgres:5432/qgate
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 6
+          initialDelaySeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 6
+          initialDelaySeconds: 20
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 10001
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: schemas
+          mountPath: /schemas
+          readOnly: true
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            memory: 1Gi
+        envFrom:
+        - configMapRef:
+            name: qgate-config
+        args:
+        - worker
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: schemas
+        configMap:
+          name: qgate-schemas
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: detect-worker
+spec:
+  selector:
+    app: detect-worker
+  ports:
+  - port: 8012
+    targetPort: http
+    name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent
+  labels:
+    app: agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: agent
+  template:
+    metadata:
+      labels:
+        app: agent
+    spec:
+      containers:
+      - name: agent
+        image: ghcr.io/zakaria17amir/qgate-agent:0.1.0-rc1
+        ports:
+        - containerPort: 8001
+          name: http
+        env:
+        - name: PORT
+          value: '8001'
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: qgate-secrets
+              key: POSTGRES_PASSWORD
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: qgate-secrets
+              key: JWT_SECRET
+        - name: MES_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: qgate-secrets
+              key: MES_API_KEY
+        - name: LLM_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: qgate-secrets
+              key: LLM_API_KEY
+        - name: DATABASE_URL_AGENT_RO
+          value: postgres://agent_ro:$(POSTGRES_PASSWORD)@postgres:5432/qgate
+        - name: DATABASE_URL_CHECKPOINT_RW
+          value: postgres://checkpoint_rw:$(POSTGRES_PASSWORD)@postgres:5432/qgate
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 6
+          initialDelaySeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 6
+          initialDelaySeconds: 20
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 10001
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: schemas
+          mountPath: /schemas
+          readOnly: true
+        - name: knowledge
+          mountPath: /knowledge
+          readOnly: true
+        - name: cassettes
+          mountPath: /cassettes
+          readOnly: true
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            memory: 1Gi
+        envFrom:
+        - configMapRef:
+            name: qgate-config
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: schemas
+        configMap:
+          name: qgate-schemas
+      - name: knowledge
+        configMap:
+          name: qgate-knowledge
+      - name: cassettes
+        configMap:
+          name: qgate-cassettes
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent
+spec:
+  selector:
+    app: agent
+  ports:
+  - port: 8001
+    targetPort: http
+    name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  labels:
+    app: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+      - name: api
+        image: ghcr.io/zakaria17amir/qgate-api:0.1.0-rc1
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: PORT
+          value: '8000'
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: qgate-secrets
+              key: POSTGRES_PASSWORD
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: qgate-secrets
+              key: JWT_SECRET
+        - name: DATABASE_URL
+          value: postgres://api_rw:$(POSTGRES_PASSWORD)@postgres:5432/qgate
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 6
+          initialDelaySeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 6
+          initialDelaySeconds: 20
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 10001
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: schemas
+          mountPath: /schemas
+          readOnly: true
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            memory: 1Gi
+        envFrom:
+        - configMapRef:
+            name: qgate-config
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: schemas
+        configMap:
+          name: qgate-schemas
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+spec:
+  selector:
+    app: api
+  ports:
+  - port: 8000
+    targetPort: http
+    name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mock-mes
+  labels:
+    app: mock-mes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mock-mes
+  template:
+    metadata:
+      labels:
+        app: mock-mes
+    spec:
+      containers:
+      - name: mock-mes
+        image: ghcr.io/zakaria17amir/qgate-mock-mes:0.1.0-rc1
+        ports:
+        - containerPort: 8003
+          name: http
+        env:
+        - name: PORT
+          value: '8003'
+        - name: MES_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: qgate-secrets
+              key: MES_API_KEY
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 6
+          initialDelaySeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 6
+          initialDelaySeconds: 20
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 10001
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            memory: 1Gi
+        envFrom:
+        - configMapRef:
+            name: qgate-config
+      volumes:
+      - name: tmp
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mock-mes
+spec:
+  selector:
+    app: mock-mes
+  ports:
+  - port: 8003
+    targetPort: http
+    name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: console
+  labels:
+    app: console
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: console
+  template:
+    metadata:
+      labels:
+        app: console
+    spec:
+      containers:
+      - name: console
+        image: ghcr.io/zakaria17amir/qgate-console:0.1.0-rc1
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: PORT
+          value: '8080'
+        readinessProbe:
+          httpGet:
+            path: /
+            port: http
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 6
+          initialDelaySeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: http
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 6
+          initialDelaySeconds: 20
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 101
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: nginx-cache
+          mountPath: /var/cache/nginx
+        - name: nginx-run
+          mountPath: /var/run
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            memory: 1Gi
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: nginx-cache
+        emptyDir: {}
+      - name: nginx-run
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: console
+spec:
+  selector:
+    app: console
+  ports:
+  - port: 8080
+    targetPort: http
+    name: http

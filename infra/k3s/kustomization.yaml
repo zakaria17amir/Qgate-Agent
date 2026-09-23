@@ -1,0 +1,133 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: qgate
+resources:
+- namespace.yaml
+- config.yaml
+- secrets.example.yaml
+- postgres.yaml
+- redpanda.yaml
+- migrate-job.yaml
+- services.yaml
+configMapGenerator:
+- name: qgate-schemas
+  files:
+  - ../../schemas/line.build.events.v1.avsc
+  - ../../schemas/line.measurements.v1.avsc
+  - ../../schemas/line.eol.results.v1.avsc
+  - ../../schemas/quality.alerts.v1.avsc
+  - ../../schemas/quality.containment.v1.avsc
+- name: qgate-knowledge
+  files:
+  - ../../knowledge/fault_map.yaml
+- name: qgate-migrations
+  files:
+  - ../../db/migrations/0000_schema.sql
+  - ../../db/migrations/0001_dims.sql
+  - ../../db/migrations/0002_facts.sql
+  - ../../db/migrations/0003_containment.sql
+  - ../../db/migrations/0004_roles.sql
+  - ../../db/migrations/0005_evidence.sql
+- name: qgate-roles-sql
+  files:
+  - ../../db/set_role_passwords.sql
+- name: qgate-cassettes
+  files:
+  - ../../eval/cassettes/compose-1-117b685f3145ce2e.json
+  - ../../eval/cassettes/compose-1-15c6da389fe3edda.json
+  - ../../eval/cassettes/compose-1-169fc1b08ec95641.json
+  - ../../eval/cassettes/compose-1-1858b63dcbac3f57.json
+  - ../../eval/cassettes/compose-1-2fd92c4e5a9f2325.json
+  - ../../eval/cassettes/compose-1-3c8f43791aab78b3.json
+  - ../../eval/cassettes/compose-1-411cdbbac530b840.json
+  - ../../eval/cassettes/compose-1-44d1f931c916cebb.json
+  - ../../eval/cassettes/compose-1-50de2b555fb76a00.json
+  - ../../eval/cassettes/compose-1-56a2c909710fb4cb.json
+  - ../../eval/cassettes/compose-1-64a5dcdc3b917de5.json
+  - ../../eval/cassettes/compose-1-652fb96355ed7ef0.json
+  - ../../eval/cassettes/compose-1-6bf4387e4c7b0991.json
+  - ../../eval/cassettes/compose-1-6c968a048acbd706.json
+  - ../../eval/cassettes/compose-1-6fd620dbcb7e8cff.json
+  - ../../eval/cassettes/compose-1-72f77b9460628ee1.json
+  - ../../eval/cassettes/compose-1-7489f1f4ba42d3d3.json
+  - ../../eval/cassettes/compose-1-8f511a55e79548ba.json
+  - ../../eval/cassettes/compose-1-90302bc53c91c5bf.json
+  - ../../eval/cassettes/compose-1-9191a388d780de7e.json
+  - ../../eval/cassettes/compose-1-9439767bd8d64f2e.json
+  - ../../eval/cassettes/compose-1-94b98fe7dbf0a537.json
+  - ../../eval/cassettes/compose-1-ab6d6f75fd4cf8ec.json
+  - ../../eval/cassettes/compose-1-b7c8ff5c258126a1.json
+  - ../../eval/cassettes/compose-1-bcfbb355a85f3db1.json
+  - ../../eval/cassettes/compose-1-cd6b75ec5c967a8a.json
+  - ../../eval/cassettes/compose-1-d35cc6767c604aa6.json
+  - ../../eval/cassettes/compose-1-dbb7c25ea43718a1.json
+  - ../../eval/cassettes/compose-1-dec13ecd6d993581.json
+  - ../../eval/cassettes/compose-1-e01ce23a3a593422.json
+  - ../../eval/cassettes/compose-1-e2a1fd7ef7cfb273.json
+  - ../../eval/cassettes/compose-1-e52659b93b0877b2.json
+  - ../../eval/cassettes/compose-1-e610ffde0791c8e6.json
+  - ../../eval/cassettes/compose-1-e9dc88b383dfd3dd.json
+  - ../../eval/cassettes/compose-1-f30844e0d7b887c5.json
+  - ../../eval/cassettes/escalate-1-66fb7cf151a774f0.json
+  - ../../eval/cassettes/escalate-1-68189dc651c777d3.json
+  - ../../eval/cassettes/escalate-1-6be5150e204c6d1a.json
+  - ../../eval/cassettes/escalate-1-75f06bed7924ee26.json
+  - ../../eval/cassettes/escalate-1-8ec7271a67354cb5.json
+  - ../../eval/cassettes/escalate-1-92b914f5c2e8d5f6.json
+  - ../../eval/cassettes/hypothesise-1-04a76eb154f1a154.json
+  - ../../eval/cassettes/hypothesise-1-1258b4158fe152b8.json
+  - ../../eval/cassettes/hypothesise-1-139ec1c077e646c3.json
+  - ../../eval/cassettes/hypothesise-1-16744503f8cfcbcb.json
+  - ../../eval/cassettes/hypothesise-1-25210858d330e9af.json
+  - ../../eval/cassettes/hypothesise-1-272c3c80ba5b7ccb.json
+  - ../../eval/cassettes/hypothesise-1-39ee41b2f7be7413.json
+  - ../../eval/cassettes/hypothesise-1-3b883a4d7db5f6ef.json
+  - ../../eval/cassettes/hypothesise-1-3e1d94f260fe6788.json
+  - ../../eval/cassettes/hypothesise-1-4e07c57d3db8e9a2.json
+  - ../../eval/cassettes/hypothesise-1-514ddc10cf94b5ce.json
+  - ../../eval/cassettes/hypothesise-1-5e3ed7b91152ef06.json
+  - ../../eval/cassettes/hypothesise-1-6882a359498df005.json
+  - ../../eval/cassettes/hypothesise-1-7643d8afab7f0181.json
+  - ../../eval/cassettes/hypothesise-1-7d7ba50aa6958f8e.json
+  - ../../eval/cassettes/hypothesise-1-7e93ff792212825e.json
+  - ../../eval/cassettes/hypothesise-1-87fb678b3b00c2bf.json
+  - ../../eval/cassettes/hypothesise-1-88d87706507e5445.json
+  - ../../eval/cassettes/hypothesise-1-895da52043dbae33.json
+  - ../../eval/cassettes/hypothesise-1-8cedc0e971baa2cd.json
+  - ../../eval/cassettes/hypothesise-1-94277ed12613bada.json
+  - ../../eval/cassettes/hypothesise-1-9600e980892d88da.json
+  - ../../eval/cassettes/hypothesise-1-9748b8edba6a4e16.json
+  - ../../eval/cassettes/hypothesise-1-9928e78bb3658d72.json
+  - ../../eval/cassettes/hypothesise-1-a6ac413819ab9b16.json
+  - ../../eval/cassettes/hypothesise-1-ab476711d7d56004.json
+  - ../../eval/cassettes/hypothesise-1-c485d5953e1fc176.json
+  - ../../eval/cassettes/hypothesise-1-d429a70b3313c730.json
+  - ../../eval/cassettes/hypothesise-1-d5b3aa786eb0d216.json
+  - ../../eval/cassettes/hypothesise-1-d8b8064145b636bd.json
+  - ../../eval/cassettes/hypothesise-1-d98784250f2bd67b.json
+  - ../../eval/cassettes/hypothesise-1-de12b1e1f3d8ea06.json
+  - ../../eval/cassettes/hypothesise-1-e2335a1a4b85a45f.json
+  - ../../eval/cassettes/hypothesise-1-e7311f6d0fc1463d.json
+  - ../../eval/cassettes/hypothesise-1-eae20cb6a3d3672a.json
+  - ../../eval/cassettes/hypothesise-1-f084f4ad54a99246.json
+  - ../../eval/cassettes/hypothesise-1-f6ba260ecc6d9b9c.json
+  - ../../eval/cassettes/hypothesise-1-f786859bc7f1f1dc.json
+  - ../../eval/cassettes/hypothesise-1-ff6d9b1ef1541789.json
+  - ../../eval/cassettes/hypothesise-1-ffacffdab680a626.json
+generatorOptions:
+  disableNameSuffixHash: true
+images:
+- name: ghcr.io/zakaria17amir/qgate-ingest
+  newTag: 0.1.0-rc1
+- name: ghcr.io/zakaria17amir/qgate-detect
+  newTag: 0.1.0-rc1
+- name: ghcr.io/zakaria17amir/qgate-agent
+  newTag: 0.1.0-rc1
+- name: ghcr.io/zakaria17amir/qgate-api
+  newTag: 0.1.0-rc1
+- name: ghcr.io/zakaria17amir/qgate-mock-mes
+  newTag: 0.1.0-rc1
+- name: ghcr.io/zakaria17amir/qgate-console
+  newTag: 0.1.0-rc1
+- name: ghcr.io/zakaria17amir/qgate-gen
+  newTag: 0.1.0-rc1

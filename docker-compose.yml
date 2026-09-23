@@ -123,6 +123,24 @@ services:
     depends_on:
       migrate: { condition: service_completed_successfully }
 
+  # stations, characteristics, shifts and benches from scenarios/line.yaml (idempotent); the facts
+  # reference them, so nothing that writes facts starts before this has run
+  seed:
+    <<: *python-common
+    build: { context: ., dockerfile: docker/python.Dockerfile, args: { PACKAGE: qgate-generator, ENTRYPOINT: qgate-gen } }
+    image: ghcr.io/zakaria17amir/qgate-gen:dev
+    profiles: [core]
+    restart: "no"
+    command: ["seed-dims", "--scenarios-dir", "/scenarios"]
+    environment:
+      <<: *python-env
+      DATABASE_URL: postgres://ingest_rw:${POSTGRES_PASSWORD}@postgres:5432/qgate
+    volumes:
+      - ./scenarios:/scenarios:ro
+      - ./schemas:/schemas:ro
+    depends_on:
+      roles: { condition: service_completed_successfully }
+
   # ---------------------------------------------------------------- product services
   # `make demo`: gen writes the scenario manifest into sim-data, line-sim replays it at takt (ADR-011)
   gen:
@@ -137,7 +155,7 @@ services:
       - ./schemas:/schemas:ro
       - sim-data:/data
     depends_on:
-      roles: { condition: service_completed_successfully }
+      seed: { condition: service_completed_successfully }
 
   line-sim:
     build: { context: ., dockerfile: services/line-sim/Dockerfile }
@@ -181,7 +199,7 @@ services:
       - ./schemas:/schemas:ro
     depends_on:
       redpanda: { condition: service_healthy }
-      roles: { condition: service_completed_successfully }
+      seed: { condition: service_completed_successfully }
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8010/ready')"]
       <<: *hc-http
@@ -197,7 +215,7 @@ services:
       PORT: "8002"
       DATABASE_URL: postgres://detect_ro:${POSTGRES_PASSWORD}@postgres:5432/qgate
     depends_on:
-      roles: { condition: service_completed_successfully }
+      seed: { condition: service_completed_successfully }
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8002/ready')"]
       <<: *hc-http
@@ -215,7 +233,7 @@ services:
       - ./schemas:/schemas:ro
     depends_on:
       redpanda: { condition: service_healthy }
-      roles: { condition: service_completed_successfully }
+      seed: { condition: service_completed_successfully }
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8012/ready')"]
       <<: *hc-http
@@ -240,7 +258,7 @@ services:
       - ./eval/cassettes:/cassettes:ro
     depends_on:
       redpanda: { condition: service_healthy }
-      roles: { condition: service_completed_successfully }
+      seed: { condition: service_completed_successfully }
       detect: { condition: service_healthy }
       api: { condition: service_healthy }
     healthcheck:
@@ -260,7 +278,7 @@ services:
       - ./schemas:/schemas:ro
     depends_on:
       redpanda: { condition: service_healthy }
-      roles: { condition: service_completed_successfully }
+      seed: { condition: service_completed_successfully }
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/ready')"]
       <<: *hc-http
@@ -504,7 +522,7 @@ services:
       - ./schemas:/schemas:ro
     depends_on:
       redpanda: { condition: service_healthy }
-      roles: { condition: service_completed_successfully }
+      seed: { condition: service_completed_successfully }
       detect: { condition: service_healthy }
       api: { condition: service_healthy }
     healthcheck:
