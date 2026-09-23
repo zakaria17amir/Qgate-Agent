@@ -20,7 +20,7 @@ def main(golden_id: str = "drift-05") -> None:
     env = {k: (v or "").split("#")[0].strip() for k, v in dotenv_values(ROOT / ".env").items()}
     pg = (
         f"postgres://qgate_migrate:{env['POSTGRES_PASSWORD']}@localhost:"
-        f"{env.get('POSTGRES_HOST_PORT') or 5432}/qgate"
+        f"{env.get('POSTGRES_HOST_PORT') or 15432}/qgate"
     )
     g = Golden.load(ROOT / "eval" / "goldens" / f"{golden_id}.yaml")
     load_case(pg, g)
