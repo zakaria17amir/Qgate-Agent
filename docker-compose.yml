@@ -171,7 +171,7 @@ services:
       - --schemas
       - /schemas
       - --speed
-      - ${REPLAY_SPEED:-10}
+      - ${REPLAY_SPEED:-100}
     ports: ["8020:8010"]   # /metrics
     read_only: true
     volumes:

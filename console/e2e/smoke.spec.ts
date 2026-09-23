@@ -3,6 +3,12 @@
 import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 
+// SHOTS=1 also writes the README's two gate screenshots.
+const shot = (page: import("@playwright/test").Page, name: string) =>
+  process.env.SHOTS
+    ? page.screenshot({ path: `../docs/img/${name}.png`, fullPage: true })
+    : Promise.resolve();
+
 const tokens = JSON.parse(readFileSync("e2e/.tokens.json", "utf8")) as {
   viewer: string;
   approver: string;
@@ -33,6 +39,7 @@ test("approver amends the window by ten minutes and the hold is committed", asyn
   await signIn(page, tokens.approver);
   await page.getByRole("row", { name: /ST-19/ }).click();
   const before = Number(await page.getByTestId("vin-count").innerText());
+  await shot(page, "gate-case");
   await page.getByRole("link", { name: "Decide" }).click();
 
   await page.getByLabel("Amend").check();
@@ -51,6 +58,7 @@ test("approver amends the window by ten minutes and the hold is committed", asyn
     )
     .toBeLessThan(before);
   await page.getByLabel("Reason").fill("tool changed ten minutes in");
+  await shot(page, "gate-decide");
   await page.getByRole("button", { name: "Submit decision" }).click();
 
   await expect(page.getByText("Committed")).toBeVisible({ timeout: 30_000 });
