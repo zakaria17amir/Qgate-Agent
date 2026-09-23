@@ -191,7 +191,7 @@ Console and C++ are independent of each other; reliability items need Phase 3 co
 - [x] **[F]** `release.yml` dry run on tag `v0.1.0-rc1`: nine multi-arch images with SBOM + provenance on GHCR, pre-release → Docker/CI rows
 - [x] **[F]** Air-gapped profile **wired, not exercised**: `agent-airgap` on a native Ollama (`qwen2.5:7b` fits the 6 GB GPU), `LLM_BASE_URL`; README says so until Ollama is installed
 - [x] **[F]** Every `image:` and `FROM` pinned by digest (unit test); Dependabot `docker-compose` ecosystem bumps them → supply-chain claim
-- [ ] **[G]** **Gate 5:** nightly publishes without a human; dashboard shows the load test
+- [x] **[G]** **Gate 5** (nightly run 35800769279: eval-live + deploy green, page live at zakaria17amir.github.io/Qgate-Agent with the live-model numbers; release v0.1.0-rc1: 9 images + pre-release; dashboard screenshot from a loaded stack; PR #26 CI 8/8)**:** nightly publishes without a human; dashboard shows the load test
 
 ---
 
