@@ -30,6 +30,7 @@ curl -X POST -H "Authorization: Bearer $T" -H 'Content-Type: application/json' \
 | Next failures | 4 **PROPOSED** `WINDOW` at ST-19 within a minute of it, e.g. 79 vehicles | |
 | Approve one through the api | `COMMITTED`, plant reference `HOLD-000001` | < 8 s |
 | Console `http://localhost:8080` | served (200); the sign-in → decide path is the Playwright smoke in CI | |
+| **Final run after the fixes below**, plain `make demo` | 892 EOL failures → 892 triages: 890 PROPOSED, 2 ESCALATED, **0 failed** | `make up` 59 s, demo 20 min 35 s |
 
 ## What needed a hand (and is now fixed)
 
