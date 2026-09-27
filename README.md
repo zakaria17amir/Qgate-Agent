@@ -1,5 +1,18 @@
 # qgate-agent
 
+[![ci](https://github.com/zakaria17amir/Qgate-Agent/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/zakaria17amir/Qgate-Agent/actions/workflows/ci.yml)
+[![release](https://img.shields.io/github/v/release/zakaria17amir/Qgate-Agent?include_prereleases&label=release)](https://github.com/zakaria17amir/Qgate-Agent/releases)
+[![evaluation](https://img.shields.io/badge/evaluation-live%20metrics-blue)](https://zakaria17amir.github.io/Qgate-Agent/)
+[![licence](https://img.shields.io/badge/licence-MIT-green)](LICENSE)
+[![python](https://img.shields.io/badge/python-3.12-3776AB)](pyproject.toml)
+[![c++](https://img.shields.io/badge/C%2B%2B-20-00599C)](services/line-sim)
+[![typescript](https://img.shields.io/badge/react-typescript-3178C6)](console)
+
+**Human-in-the-loop AI agent for manufacturing quality: LangGraph triage over Kafka event streams
+and PostgreSQL genealogy, with SPC / change-point detection, a non-bypassable approval gate,
+chaos-tested reliability, and a 50-case evaluation harness — Python, C++, React, Docker,
+Kubernetes.**
+
 When a vehicle fails end-of-line test, someone has to decide within minutes how many vehicles to
 quarantine — too narrow and a defect escapes to a customer, too wide and hundreds of good cars are
 held. `qgate-agent` correlates the failure against build genealogy and station drift, proposes a
@@ -113,6 +126,24 @@ short version:
   [`loadtest`](loadtest), CI in [`.github/workflows`](.github/workflows).
 
 ![dashboard under the load test](docs/img/dashboard.png)
+
+## Tech stack
+
+Every item below is used in this repository; [`docs/skills.md`](docs/skills.md) says where and how
+it was exercised.
+
+| Area | Technologies |
+|---|---|
+| Languages | Python 3.12 (`uv` workspace, `mypy --strict`, `ruff`), C++20 (CMake, Catch2), TypeScript |
+| AI agent | LangGraph (durable Postgres checkpointer, `interrupt()` gate), LangChain providers for OpenAI / Anthropic / Ollama, recorded-cassette replay for deterministic tests, LLM evaluation on 50 golden cases, prompt cost and token accounting |
+| Quality engineering | Statistical process control (SPC), change-point detection (PELT / CUSUM via `ruptures`), measurement system analysis (`%GRR`), build genealogy correlation in SQL |
+| Streaming and data | Apache Kafka (Redpanda), Avro in Confluent wire format via Redpanda's Schema Registry, `librdkafka`, PostgreSQL 16 with least-privilege roles, idempotent ingestion, dead-letter queue |
+| Services and API | FastAPI, Pydantic, `httpx`, JWT (HS256) role-based auth, idempotency keys, retries with backoff (`tenacity`) and a circuit breaker |
+| Frontend | React 18, TypeScript, Vite, TanStack Query, React Router, Playwright end-to-end tests |
+| Observability | Prometheus metrics, Grafana dashboards, OpenTelemetry traces over OTLP, Langfuse, structured JSON logging (`structlog`) |
+| Reliability testing | Chaos tests with Toxiproxy (MES outage, agent kill mid-gate), k6 load test, Testcontainers integration tests, `pytest` |
+| Platform and delivery | Docker Compose, Kubernetes (k3s, Kustomize), GitHub Actions CI/CD, multi-arch images on GHCR with SBOM and provenance, images pinned by digest, Dependabot, Trivy, `pip-audit`, gitleaks, pre-commit |
+| Orchestration | Prefect flows (replay, nightly evaluation, report publishing to GitHub Pages) |
 
 ## ROI
 
