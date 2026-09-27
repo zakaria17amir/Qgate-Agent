@@ -203,8 +203,8 @@ Console and C++ are independent of each other; reliability items need Phase 3 co
 - [x] **[F]** `infra/k3s/` kustomize, exercised once on a single-node k3d cluster (not a VM); README says exactly that
 - [x] **[F]** Fresh clone (second checkout on the same laptop, clean volumes, cold image build): `git clone && make up && make demo` → the README is true; six findings fixed (`docs/fresh-clone.md`)
 - [x] **[F]** Skill-coverage table ticked against real artefacts (`docs/skills.md`, links checked by `make lint`); anything unticked removed from CV claims
-- [ ] **[F]** Tag `v1.0.0`; release notes carry `eval/report.md`
-- [ ] **[G]** **Gate 6:** a stranger clones, runs one command, sees it work — and every claimed skill has a link
+- [x] **[F]** Tag `v1.0.0` (2026-09-27, release run 36346786491: 9 multi-arch images + release, all green); release notes open with `eval/report.md`, assets `report.md` `baseline.json` `load.json`
+- [x] **[G]** **Gate 6:** a stranger clones, runs one command, sees it work (`docs/fresh-clone.md`) — and every claimed skill has a link (`docs/skills.md`, `scripts/check_links.py`: 36 files, 0 broken)
 
 ---
 
