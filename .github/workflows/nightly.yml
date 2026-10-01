@@ -19,20 +19,20 @@ jobs:
       LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
       LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: cp .env.example .env
       # the eval profile alone: prefect + eval-db + worker; the in-process harness needs no core stack
       - run: docker compose --profile eval up -d --build --wait prefect-server eval-db prefect-worker
       - run: docker compose --profile eval run --rm prefect-deploy
       - run: docker compose --profile eval run --rm prefect-deploy deployment run 'nightly-eval/nightly-eval' --param mode=live --watch
       - run: docker compose --profile eval run --rm prefect-deploy deployment run 'publish-report/publish-report' --watch
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: nightly-report
           path: |
             eval/report.md
             eval/metrics.json
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with: { path: eval/site }
       - if: always()
         run: docker compose --profile eval logs prefect-worker --tail 200 && docker compose --profile eval down -v
@@ -46,4 +46,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
